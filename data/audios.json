@@ -1,0 +1,132 @@
+{
+  "type": "audio",
+  "base_url": "https://raw.githubusercontent.com/itsnjedits/audios/main/",
+  "items": [
+    {
+      "id": "audio_1",
+      "title": "01. Quran Khadan Ka Taza Hira",
+      "file": "01. Quran Khadan Ka Taza Hira.mp3",
+      "thumbnail": ""
+    },
+    {
+      "id": "audio_2",
+      "title": "02. Tarikat, Shariyat, Marifat, Haquikat",
+      "file": "02. Tarikat, Shariyat, Marifat, Haquikat.mp3",
+      "thumbnail": ""
+    },
+    {
+      "id": "audio_3",
+      "title": "03. Mohammad Ki Talwar Sarjikal Hai",
+      "file": "03. Mohammad Ki Talwar Sarjikal Hai.mp3",
+      "thumbnail": ""
+    },
+    {
+      "id": "audio_4",
+      "title": "04. Ishke Bootan Karun Ya Yaaden Khuda Karun",
+      "file": "04. Ishke Bootan Karun Ya Yaaden Khuda Karun.mp3",
+      "thumbnail": ""
+    },
+    {
+      "id": "audio_5",
+      "title": "05. Namaj Jhukne Ki Kala",
+      "file": "05. Namaj Jhukne Ki Kala.mp3",
+      "thumbnail": ""
+    },
+    {
+      "id": "audio_6",
+      "title": "06. Islam Naya Hai, Phir Bhi Purane Jaisa Kyon",
+      "file": "06. Islam Naya Hai, Phir Bhi Purane Jaisa Kyon.mp3",
+      "thumbnail": ""
+    },
+    {
+      "id": "audio_7",
+      "title": "07. Mohammad Anpadh Par Bahut Buddhiman",
+      "file": "07. Mohammad Anpadh Par Bahut Buddhiman.mp3",
+      "thumbnail": ""
+    },
+    {
+      "id": "audio_8",
+      "title": "08. Paigambar Rat Ko Sab Bant Dete Thhe",
+      "file": "08. Paigambar Rat Ko Sab Bant Dete Thhe.mp3",
+      "thumbnail": ""
+    },
+    {
+      "id": "audio_9",
+      "title": "09. Galti Ki Is Ladke Ko Masjid Le Gaya",
+      "file": "09. Galti Ki Is Ladke Ko Masjid Le Gaya.mp3",
+      "thumbnail": ""
+    },
+    {
+      "id": "audio_10",
+      "title": "10. Sufi Fakir Roj Prabhu Ko Dhanyavad",
+      "file": "10. Sufi Fakir  Roj  Prabhu Ko Dhanyavad.mp3",
+      "thumbnail": ""
+    },
+    {
+      "id": "audio_11",
+      "title": "11. Alhillaj Mansur Musalman Aur Vedanti Bhi",
+      "file": "11. Alhillaj Mansur Musalman Aur Vedanti Bhi.mp3",
+      "thumbnail": ""
+    },
+    {
+      "id": "audio_12",
+      "title": "12. Masjid Hi Murty Ho Gayi",
+      "file": "12. Masjid Hi  Murty Ho Gayi.mp3",
+      "thumbnail": ""
+    },
+    {
+      "id": "audio_13",
+      "title": "13. Murti Todna Ya Pujna Dono Murtivadi",
+      "file": "13. Murti Todna Ya Pujna- Dono Murtivadi.mp3",
+      "thumbnail": ""
+    },
+    {
+      "id": "audio_14",
+      "title": "14. Mohammad, Abu Bakar Aur Tisra",
+      "file": "14. Mohammad, Abu Bakar Aur Tisra.mp3",
+      "thumbnail": ""
+    },
+    {
+      "id": "audio_15",
+      "title": "15. Mohammad Pagambar Ek Bade Rishi",
+      "file": "15. Mohammad Pagambar Ek Bade Rishi.mp3",
+      "thumbnail": ""
+    },
+    {
+      "id": "audio_16",
+      "title": "16. Sufi Rabiya Aur Teen Sant",
+      "file": "16. Sufi Rabiya Aur Teen Sant.mp3",
+      "thumbnail": ""
+    },
+    {
+      "id": "audio_17",
+      "title": "17. Mohammad Ham Teen Hai Do Nahin",
+      "file": "17. Mohammad  Ham Teen Hai Do Nahin.mp3",
+      "thumbnail": ""
+    },
+    {
+      "id": "audio_18",
+      "title": "18. Musalman Mitra Ka Prashna",
+      "file": "18. Musalman Mitra Ka Prashna.mp3",
+      "thumbnail": ""
+    },
+    {
+      "id": "audio_19",
+      "title": "19. Srinagar Mohammad Ka Ek Baal",
+      "file": "19. Srinagar - Mohammad Ka Ek Baal.mp3",
+      "thumbnail": ""
+    },
+    {
+      "id": "audio_20",
+      "title": "20. Majhab Ab Islam Hua",
+      "file": "20. Majhab Ab Islam hua.mp3",
+      "thumbnail": ""
+    },
+    {
+      "id": "audio_21",
+      "title": "21. Musalman Mitra Sannyas Aur Dar",
+      "file": "21. Musalman - Mitra Sannyas Aur  Dar.mp3",
+      "thumbnail": ""
+    }
+  ]
+}

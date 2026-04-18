@@ -1,0 +1,38 @@
+{
+  "type": "echo",
+  "base_url": "",
+  "pdfs": [
+    {
+      "id": "echo_pdf_1",
+      "title": "Love Is Wind",
+      "file": "pdfs/Love Is Wind.pdf",
+      "thumbnail": ""
+    },
+    {
+      "id": "echo_pdf_2",
+      "title": "Poetry",
+      "file": "pdfs/POETRY.pdf",
+      "thumbnail": "pdfs/thumbnails/POETRY.jpg"
+    }
+  ],
+  "txts": [
+    {
+      "id": "echo_txt_1",
+      "title": "Article On Love",
+      "file": "txt/article on love.txt",
+      "thumbnail": "txt/thumbnails/article on love.jpg"
+    },
+    {
+      "id": "echo_txt_2",
+      "title": "Drop Pretending To Be Ocean",
+      "file": "txt/drop pretending to be ocean.txt",
+      "thumbnail": "txt/thumbnails/drop pretending to be ocean.jpg"
+    },
+    {
+      "id": "echo_txt_3",
+      "title": "Mitna",
+      "file": "txt/mitna.txt",
+      "thumbnail": "txt/thumbnails/mitna.jpg"
+    }
+  ]
+}

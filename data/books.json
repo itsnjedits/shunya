@@ -1,0 +1,108 @@
+{
+  "type": "book",
+  "base_url": "",
+  "items": [
+    {
+      "id": "book_1",
+      "title": "Creativity",
+      "file": "CREATIVITY.pdf",
+      "thumbnail": "thumbnails/CREATIVITY.jpg"
+    },
+    {
+      "id": "book_2",
+      "title": "Eugene M Schwartz Breakthrough Advertising 2004 By Vawzine Vip",
+      "file": "Eugene M Schwartz Breakthrough Advertising 2004 BY VAWZINE VIP.pdf",
+      "thumbnail": "thumbnails/Eugene M Schwartz Breakthrough Advertising 2004 BY VAWZINE VIP.jpg"
+    },
+    {
+      "id": "book_3",
+      "title": "Friedrich Nietzsche Twilight Of The Idols Or How To Philosophize",
+      "file": "Friedrich Nietzsche Twilight of the Idols or How to Philosophize.pdf",
+      "thumbnail": "thumbnails/Friedrich Nietzsche Twilight of the Idols or How to Philosophize.jpg"
+    },
+    {
+      "id": "book_4",
+      "title": "Machiavelli Castruccio Castracani",
+      "file": "Machiavelli   Castruccio Castracani.pdf",
+      "thumbnail": "thumbnails/Machiavelli   Castruccio Castracani.jpg"
+    },
+    {
+      "id": "book_5",
+      "title": "Machiavelli ''Discourse Or Dialogue Concerning Our Language'' 1515",
+      "file": "Machiavelli ''Discourse or dialogue concerning our language'' 1515.pdf",
+      "thumbnail": "thumbnails/Machiavelli ''Discourse or dialogue concerning our language'' 1515.jpg"
+    },
+    {
+      "id": "book_6",
+      "title": "Machiavelli,+The+Prince",
+      "file": "Machiavelli,+The+Prince.pdf",
+      "thumbnail": "thumbnails/Machiavelli,+The+Prince.jpg"
+    },
+    {
+      "id": "book_7",
+      "title": "Nietzsche The Joyful Wisdom",
+      "file": "Nietzsche   The Joyful Wisdom.pdf",
+      "thumbnail": "thumbnails/Nietzsche   The Joyful Wisdom.jpg"
+    },
+    {
+      "id": "book_8",
+      "title": "Nietzsche Beyond Good And Evil",
+      "file": "Nietzsche Beyond Good and Evil.pdf",
+      "thumbnail": "thumbnails/Nietzsche Beyond Good and Evil.jpg"
+    },
+    {
+      "id": "book_9",
+      "title": "Nietzsche Human All Too Human By Nietzsche",
+      "file": "Nietzsche Human All Too Human by Nietzsche.pdf",
+      "thumbnail": "thumbnails/Nietzsche Human All Too Human by Nietzsche.jpg"
+    },
+    {
+      "id": "book_10",
+      "title": "Nietzsche The Birth Of Tragedy",
+      "file": "Nietzsche The Birth of Tragedy.pdf",
+      "thumbnail": "thumbnails/Nietzsche The Birth of Tragedy.jpg"
+    },
+    {
+      "id": "book_11",
+      "title": "Philosophy 101 From Plato And Socrates To Ethics And Metaphysics",
+      "file": "Philosophy 101 From Plato and Socrates to Ethics and Metaphysics.pdf",
+      "thumbnail": "thumbnails/Philosophy 101 From Plato and Socrates to Ethics and Metaphysics.jpg"
+    },
+    {
+      "id": "book_12",
+      "title": "The Book Of Man",
+      "file": "The Book Of Man.pdf",
+      "thumbnail": "thumbnails/The Book Of Man.jpg"
+    },
+    {
+      "id": "book_13",
+      "title": "The Book Of Five Rings Miyamoto, Musashi",
+      "file": "The Book of Five Rings   Miyamoto, Musashi.pdf",
+      "thumbnail": "thumbnails/The Book of Five Rings   Miyamoto, Musashi.jpg"
+    },
+    {
+      "id": "book_14",
+      "title": "The Millionaire Master Plan Pdf",
+      "file": "The Millionaire Master Plan PDF.pdf",
+      "thumbnail": "thumbnails/The Millionaire Master Plan PDF.jpg"
+    },
+    {
+      "id": "book_15",
+      "title": "The Rebel",
+      "file": "The Rebel.pdf",
+      "thumbnail": "thumbnails/The Rebel.jpg"
+    },
+    {
+      "id": "book_16",
+      "title": "The Secret",
+      "file": "The Secret.pdf",
+      "thumbnail": "thumbnails/The Secret.jpg"
+    },
+    {
+      "id": "book_17",
+      "title": "Cashvertising",
+      "file": "cashvertising.pdf",
+      "thumbnail": "thumbnails/cashvertising.jpg"
+    }
+  ]
+}

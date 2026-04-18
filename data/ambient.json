@@ -1,0 +1,36 @@
+{
+  "type": "ambient",
+  "base_url": "https://raw.githubusercontent.com/itsnjedits/ambient/main/",
+  "items": [
+    {
+      "id": "amb_1",
+      "title": "Antent Hope To See You Again Antent",
+      "file": "Antent - hope to see you again - Antent.mp3",
+      "thumbnail": ""
+    },
+    {
+      "id": "amb_2",
+      "title": "Experience Ludovico Einaudi",
+      "file": "Experience - Ludovico Einaudi.mp3",
+      "thumbnail": ""
+    },
+    {
+      "id": "amb_3",
+      "title": "Gibran Alcocer'S Best Ambient Playlist Vol.1 Gibran Alcocer",
+      "file": "Gibran Alcocer's Best Ambient Playlist Vol.1 - Gibran Alcocer.mp3",
+      "thumbnail": ""
+    },
+    {
+      "id": "amb_4",
+      "title": "Peaceful Solitude Peaceful Solitude",
+      "file": "Peaceful Solitude - Peaceful Solitude.mp3",
+      "thumbnail": ""
+    },
+    {
+      "id": "amb_5",
+      "title": "Seeds Of Growth Malte Marten",
+      "file": "Seeds of Growth - Malte Marten.mp3",
+      "thumbnail": ""
+    }
+  ]
+}
