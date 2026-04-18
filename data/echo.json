@@ -1,6 +1,6 @@
 {
   "type": "echo",
-  "base_url": "",
+  "base_url": "echo/",
   "pdfs": [
     {
       "id": "echo_pdf_1",

@@ -1,6 +1,6 @@
 {
   "type": "book",
-  "base_url": "/books/pdfs/",
+  "base_url": "books/pdfs/",
   "items": [
     {
       "id": "book_1",

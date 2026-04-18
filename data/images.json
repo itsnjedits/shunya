@@ -1,6 +1,6 @@
 {
   "type": "images",
-  "base_url": "/images/",
+  "base_url": "images/",
   "items": [
     {
       "id": "img_1",
