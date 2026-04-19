@@ -4,31 +4,29 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ShunyaSpace</title>
-  <meta name="description" content="A silence you can enter. A digital space for introspection.">
+  <meta name="description" content="A silence you can enter.">
 
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="styles.css">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Outfit:wght@200;300;400;500&display=swap"
-        rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Outfit:wght@200;300;400;500&display=swap" rel="stylesheet">
 
   <style>
-    /* ══════════════════════════════════════════
-       COMPONENT STYLES
-       Kept here so they're self-contained and
-       won't be lost if styles.css is replaced.
-    ══════════════════════════════════════════ */
+    /* ══════════════════════════════════════════════════
+       COMPONENT STYLES  (self-contained — safe to keep
+       even if styles.css is replaced)
+    ══════════════════════════════════════════════════ */
 
-    /* ── Content grid (audios, videos, books) ── */
+    /* ── Generic content grid ── */
     .content-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
       gap: 16px;
     }
 
-    /* ── Generic card ── */
+    /* ── Generic content card ── */
     .content-card {
       background: var(--surface);
       border: 1px solid var(--border-soft);
@@ -49,25 +47,20 @@
     }
     .content-card.is-active::before {
       content: '';
-      position: absolute;
-      left: 0; top: 0; bottom: 0;
+      position: absolute; left: 0; top: 0; bottom: 0;
       width: 3px;
       background: linear-gradient(180deg, var(--violet), var(--rose));
     }
 
     /* ── Card thumbnail ── */
     .card-thumb {
-      width: 100%;
-      aspect-ratio: 16/9;
+      width: 100%; aspect-ratio: 16/9;
       background: var(--raised);
       overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
     }
     .card-thumb img {
-      width: 100%; height: 100%;
-      object-fit: cover;
+      width: 100%; height: 100%; object-fit: cover;
       opacity: 0;
       transition: opacity .5s ease, transform .5s var(--ease-silk);
     }
@@ -75,121 +68,159 @@
     .content-card:hover .card-thumb img { transform: scale(1.04); }
     .card-thumb-placeholder { font-size: 1.8rem; color: var(--text-dim); opacity: .35; }
 
-    /* ── Card info ── */
+    /* ── Card text ── */
     .card-info { padding: 12px 14px 14px; }
     .card-badge {
-      display: inline-block;
-      font-size: .58rem;
-      letter-spacing: .18em;
-      text-transform: uppercase;
-      padding: 2px 7px;
-      border-radius: 20px;
-      margin-bottom: 6px;
-      background: rgba(124,58,237,.12);
-      color: var(--orchid);
-      border: 1px solid rgba(124,58,237,.25);
-      font-weight: 500;
+      display: inline-block; font-size: .58rem; letter-spacing: .18em;
+      text-transform: uppercase; padding: 2px 7px; border-radius: 20px; margin-bottom: 6px;
+      background: rgba(124,58,237,.12); color: var(--orchid);
+      border: 1px solid rgba(124,58,237,.25); font-weight: 500;
     }
     .echo-pdf .card-badge { background: rgba(244,114,182,.1); color: var(--rose); border-color: rgba(244,114,182,.25); }
     .echo-txt .card-badge { background: rgba(96,165,250,.1);  color: var(--blue); border-color: rgba(96,165,250,.25); }
     .card-title {
-      font-family: var(--font-serif);
-      font-size: .92rem;
-      color: var(--text-primary);
-      line-height: 1.3;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
+      font-family: var(--font-serif); font-size: .92rem;
+      color: var(--text-primary); line-height: 1.3;
+      display: -webkit-box; -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical; overflow: hidden;
     }
 
     /* ── Book action buttons ── */
     .card-actions { display: flex; gap: 8px; padding: 0 14px 12px; }
     .btn-read, .btn-dl {
-      flex: 1; padding: 6px 0;
-      border-radius: 6px;
-      font-size: .62rem; letter-spacing: .1em;
-      text-align: center; text-transform: uppercase;
-      transition: all .25s; font-family: var(--font-ui);
+      flex: 1; padding: 6px 0; border-radius: 6px;
+      font-size: .62rem; letter-spacing: .1em; text-align: center;
+      text-transform: uppercase; transition: all .25s; font-family: var(--font-ui);
     }
     .btn-read {
-      background: rgba(124,58,237,.12);
-      border: 1px solid var(--border);
+      background: rgba(124,58,237,.12); border: 1px solid var(--border);
       color: var(--orchid); cursor: pointer;
     }
     .btn-read:hover { background: var(--violet); color: #fff; border-color: var(--violet); }
     .btn-dl {
-      background: transparent;
-      border: 1px solid var(--border-soft);
+      background: transparent; border: 1px solid var(--border-soft);
       color: var(--text-dim); text-decoration: none;
       display: flex; align-items: center; justify-content: center;
     }
     .btn-dl:hover { color: var(--text-muted); border-color: var(--text-muted); }
 
-    /* ── Ambient cards ── */
-    #ambient-grid {
+    /* ─────────────────────────────────────────────────
+       AMBIENT SECTION — thumbnails + now-playing bar
+    ───────────────────────────────────────────────── */
+
+    /* Now-playing strip at top of ambient section */
+    .ambient-now-playing {
+      display: flex; align-items: center; gap: 16px;
+      background: rgba(124,58,237,.08);
+      border: 1px solid var(--violet);
+      border-radius: var(--radius); padding: 14px 18px;
+      margin-bottom: 24px;
+      animation: slideUp .35s var(--ease-calm) both;
+    }
+    .ambient-np-thumb {
+      width: 56px; height: 56px; border-radius: 8px; flex-shrink: 0;
+      background-size: cover; background-position: center;
+      background-color: var(--raised);
+      border: 1px solid var(--border-soft);
+    }
+    .ambient-np-thumb--empty {
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem; color: var(--orchid); opacity: .7;
+    }
+    .ambient-np-info { flex: 1; min-width: 0; }
+    .ambient-np-label { font-size: .58rem; letter-spacing: .2em; color: var(--orchid); text-transform: uppercase; }
+    .ambient-np-title {
+      font-family: var(--font-serif); font-size: 1rem;
+      color: var(--text-primary); white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+    .ambient-np-controls { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+    .ambient-vol-slider {
+      -webkit-appearance: none; width: 80px; height: 2px;
+      background: var(--raised); border-radius: 2px; outline: none; cursor: pointer;
+    }
+    .ambient-vol-slider::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 12px; height: 12px;
+      border-radius: 50%; background: var(--orchid); cursor: pointer;
+    }
+    .ambient-stop-btn {
+      background: none; border: 1px solid var(--border); border-radius: 6px;
+      color: var(--text-muted); font-size: .68rem; letter-spacing: .1em;
+      padding: 5px 10px; cursor: pointer; font-family: var(--font-ui);
+      transition: all .2s; white-space: nowrap;
+    }
+    .ambient-stop-btn:hover { border-color: var(--rose); color: var(--rose); }
+
+    /* Ambient cards grid */
+    .ambient-cards-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
-      gap: 12px; max-width: 820px;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 14px;
     }
     .ambient-card {
-      background: var(--surface);
-      border: 1px solid var(--border-soft);
-      border-radius: var(--radius);
-      padding: 24px 18px; cursor: pointer;
-      transition: all .35s var(--ease-silk);
-      text-align: center; position: relative; overflow: hidden;
+      background: var(--surface); border: 1px solid var(--border-soft);
+      border-radius: var(--radius); overflow: hidden;
+      cursor: pointer; transition: all .35s var(--ease-silk);
     }
-    .ambient-card::after {
-      content: ''; position: absolute; inset: 0;
-      background: radial-gradient(ellipse at center, rgba(124,58,237,.12), transparent);
-      opacity: 0; transition: opacity .4s;
-    }
-    .ambient-card:hover::after, .ambient-card.playing::after { opacity: 1; }
+    .ambient-card:hover { border-color: var(--border); transform: translateY(-2px); }
     .ambient-card.playing { border-color: var(--violet); background: rgba(124,58,237,.08); }
-    .ambient-icon  { font-size: 1.8rem; margin-bottom: 10px; display: block; }
-    .ambient-title { font-size: .8rem; color: var(--text-secondary); font-weight: 300; margin-bottom: 6px; }
-    .ambient-status { font-size: .6rem; letter-spacing: .15em; color: var(--text-dim); text-transform: uppercase; }
-    .ambient-card.playing .ambient-status { color: var(--orchid); animation: pulse-text 2s ease-in-out infinite; }
+
+    /* Ambient thumbnail */
+    .ambient-thumb {
+      width: 100%; aspect-ratio: 16/9;
+      background: var(--raised);
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+    .ambient-thumb img {
+      width: 100%; height: 100%; object-fit: cover;
+      opacity: 0; transition: opacity .5s ease;
+    }
+    .ambient-thumb img.loaded { opacity: 1; }
+    .ambient-thumb--empty { font-size: 2rem; color: var(--orchid); opacity: .35; }
+
+    .ambient-card-info { padding: 12px 14px 14px; }
+    .ambient-title { font-family: var(--font-serif); font-size: .9rem; color: var(--text-primary); }
+    .ambient-status {
+      margin-top: 4px; font-size: .65rem; letter-spacing: .12em;
+      color: var(--text-dim); text-transform: uppercase;
+    }
+    .ambient-card.playing .ambient-status { color: var(--orchid); animation: pulse-text 2s infinite; }
     @keyframes pulse-text { 0%,100%{opacity:.7} 50%{opacity:1} }
 
-    /* ── Echo grid ── */
+    /* ── Old ambient-grid reference (used by JS to find the container) ── */
+    #ambient-grid { /* container for both now-playing + cards-grid */ }
+
+    /* ─────────────────────────────────────────────────
+       ECHO GRID — responsive  ← FIX ⑨
+    ───────────────────────────────────────────────── */
     #echo-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 16px; max-width: 960px;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));  /* auto-fit → wraps */
+      gap: 16px;
     }
 
-    /* ══════════════════════════════════════════
-       BOTTOM PLAYER BAR
-    ══════════════════════════════════════════ */
+    /* ─────────────────────────────────────────────────
+       BOTTOM PLAYER BAR  (with volume slider ← FIX ⑧)
+    ───────────────────────────────────────────────── */
     #bottom-player {
       position: fixed; bottom: 0;
       left: var(--nav-w); right: 0;
       height: 72px;
-      display: none;
-      align-items: center;
-      gap: 16px; padding: 0 28px;
+      display: none; align-items: center;
+      gap: 14px; padding: 0 24px;
       background: rgba(10,9,22,.97);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border-top: 1px solid var(--border);
-      z-index: 200;
+      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+      border-top: 1px solid var(--border); z-index: 200;
     }
     #bottom-player.visible { display: flex; animation: slideUp .35s var(--ease-calm) both; }
     @keyframes slideUp { from{transform:translateY(100%);opacity:0} to{transform:none;opacity:1} }
 
-    /* Player thumbnail */
     #player-thumb {
-      width: 44px; height: 44px;
-      border-radius: 6px; object-fit: cover;
-      flex-shrink: 0;
-      border: 1px solid var(--border-soft);
-      background: var(--raised);
-      display: none;
+      width: 44px; height: 44px; border-radius: 6px; object-fit: cover;
+      flex-shrink: 0; border: 1px solid var(--border-soft);
+      background: var(--raised); display: none;
     }
-
-    /* Player text */
     .player-info { flex: 1; min-width: 0; }
     #player-title {
       font-family: var(--font-serif); font-size: .9rem;
@@ -198,23 +229,20 @@
     }
     #player-speaker { font-size: .65rem; color: var(--orchid); letter-spacing: .08em; margin-top: 1px; }
 
-    /* Transport */
     .player-controls { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
     .btn-prev, .btn-next {
       background: none; border: none; cursor: pointer;
-      color: var(--text-muted); font-size: .85rem; padding: 4px 6px;
-      transition: color .2s;
+      color: var(--text-muted); font-size: .85rem; padding: 4px 6px; transition: color .2s;
     }
     .btn-prev:hover, .btn-next:hover { color: var(--orchid); }
     #btn-play-pause {
       width: 38px; height: 38px; border-radius: 50%;
-      background: var(--violet); border: none; color: #fff;
-      font-size: .9rem; display: flex; align-items: center; justify-content: center;
+      background: var(--violet); border: none; color: #fff; font-size: .9rem;
+      display: flex; align-items: center; justify-content: center;
       cursor: pointer; transition: background .25s, transform .2s;
     }
     #btn-play-pause:hover { background: var(--purple); transform: scale(1.06); }
 
-    /* Progress */
     .player-progress { flex: 2; display: flex; align-items: center; gap: 8px; min-width: 0; }
     .progress-time { font-size: .62rem; color: var(--text-dim); font-variant-numeric: tabular-nums; flex-shrink: 0; }
     .progress-track {
@@ -223,43 +251,99 @@
     }
     .progress-track:hover { height: 4px; transition: height .15s; }
     .progress-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--violet), var(--orchid));
-      border-radius: 2px; width: 0%;
-      transition: width .1s linear; pointer-events: none;
+      height: 100%; background: linear-gradient(90deg, var(--violet), var(--orchid));
+      border-radius: 2px; width: 0%; transition: width .1s linear; pointer-events: none;
     }
     .progress-thumb {
-      position: absolute; right: -4px; top: 50%;
-      transform: translateY(-50%);
-      width: 10px; height: 10px; border-radius: 50%;
-      background: var(--orchid); opacity: 0; transition: opacity .2s;
-      pointer-events: none;
+      position: absolute; right: -4px; top: 50%; transform: translateY(-50%);
+      width: 10px; height: 10px; border-radius: 50%; background: var(--orchid);
+      opacity: 0; transition: opacity .2s; pointer-events: none;
     }
     .progress-track:hover .progress-thumb { opacity: 1; }
 
-    /* Download */
+    /* Volume slider — new ⑧ */
+    #player-volume {
+      -webkit-appearance: none; width: 70px; height: 2px;
+      background: var(--raised); border-radius: 2px;
+      outline: none; cursor: pointer; flex-shrink: 0;
+    }
+    #player-volume::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 10px; height: 10px;
+      border-radius: 50%; background: var(--orchid); cursor: pointer;
+    }
+
     #player-download {
-      flex-shrink: 0;
-      width: 34px; height: 34px; border-radius: 50%;
-      border: 1px solid var(--border-soft);
-      color: var(--text-muted); font-size: .85rem;
-      text-decoration: none;
-      display: flex; align-items: center; justify-content: center;
-      transition: all .25s;
+      flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%;
+      border: 1px solid var(--border-soft); color: var(--text-muted);
+      font-size: .85rem; text-decoration: none;
+      display: flex; align-items: center; justify-content: center; transition: all .25s;
     }
     #player-download:hover { border-color: var(--orchid); color: var(--orchid); }
 
-    /* ── Mobile adjustments ── */
+    /* Mobile player */
     @media (max-width: 900px) {
-      #bottom-player { left: 0; padding: 0 16px; gap: 10px; }
+      #bottom-player { left: 0; padding: 0 14px; gap: 10px; }
       .player-progress { display: none; }
+      #player-volume  { display: none; }
     }
+
+    /* ─────────────────────────────────────────────────
+       PDF READER MODAL  ← NEW FEATURE ⑦
+    ───────────────────────────────────────────────── */
+    #pdf-modal {
+      position: fixed; inset: 0;
+      background: rgba(7,6,15,.96); z-index: 1000;
+      display: none; flex-direction: column;
+      animation: fadeIn .3s ease;
+    }
+    #pdf-modal.open { display: flex; }
+
+    .pdf-modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; padding: 14px 24px;
+      background: rgba(13,11,26,.98);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0; flex-wrap: wrap;
+    }
+    #pdf-modal-title {
+      font-family: var(--font-serif); font-size: 1rem;
+      color: var(--text-primary); margin-bottom: 6px;
+    }
+    .pdf-page-nav {
+      display: flex; align-items: center; gap: 8px;
+      font-size: .72rem; color: var(--text-muted);
+    }
+    .pdf-page-nav button {
+      background: none; border: 1px solid var(--border-soft);
+      color: var(--text-muted); border-radius: 5px;
+      padding: 3px 8px; cursor: pointer; font-size: .7rem;
+      transition: all .2s; font-family: var(--font-ui);
+    }
+    .pdf-page-nav button:hover { border-color: var(--orchid); color: var(--orchid); }
+    #pdf-page-num {
+      width: 48px; text-align: center;
+      background: var(--raised); border: 1px solid var(--border);
+      border-radius: 5px; color: var(--text-primary);
+      padding: 3px 6px; font-size: .72rem; font-family: var(--font-ui);
+    }
+    #pdf-page-num:focus { outline: none; border-color: var(--orchid); }
+    .pdf-modal-actions { display: flex; align-items: center; gap: 10px; }
+
+    #pdf-iframe {
+      flex: 1; border: none; width: 100%;
+      background: #1a1a1a;
+    }
+
+    /* ─────────────────────────────────────────────────
+       SHARED MODAL ANIMATIONS
+    ───────────────────────────────────────────────── */
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
   </style>
 </head>
 
 <body>
 
-<!-- Stars canvas (fixed background) -->
+<!-- Stars canvas -->
 <canvas id="stars-canvas"
   style="position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.6;"></canvas>
 
@@ -268,17 +352,13 @@
   <span></span><span></span><span></span>
 </button>
 
-<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     #app — the flex root that holds sidebar + main.
-     FIX: was missing → CSS #app{display:flex} never fired
-          → sidebar and main were not flex siblings
-          → layout was broken on all screen sizes.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     #app — the flex root (sidebar + main side-by-side)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
 <div id="app" style="opacity:0; transition: opacity .6s ease;">
 
   <!-- ── SIDEBAR ── -->
   <aside id="sidebar" aria-label="Navigation">
-
     <div class="sidebar-logo">
       <div class="logo-mark">
         <svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
@@ -298,22 +378,19 @@
       <div id="logo-sub"  class="logo-sub">शून्य</div>
     </div>
 
-    <!-- Nav links are injected by script.js -->
-    <!-- If global.json fails, FALLBACK_NAV in script.js is used instead -->
     <nav aria-label="Site sections">
-      <ul class="nav-list" id="nav-list"></ul>
+      <ul class="nav-list" id="nav-list">
+        <!-- Injected by script.js — falls back to FALLBACK_NAV if global.json missing -->
+      </ul>
     </nav>
 
     <div class="sidebar-bottom">
-      <!-- Ambient status mini-indicator -->
       <div class="ambient-mini">
         <div class="ambient-mini-title">
           <span>No ambient</span>
-          <span class="ambient-mini-stop" title="Stop ambient sound">✕</span>
+          <span class="ambient-mini-stop" title="Stop ambient">✕</span>
         </div>
       </div>
-
-      <!-- Random content picker -->
       <button id="btn-random"><span>✦</span> Random Wisdom</button>
     </div>
   </aside>
@@ -321,11 +398,8 @@
   <!-- ── MAIN CONTENT ── -->
   <main id="main">
 
-    <!-- Shared content grid anchor (referenced by JS) -->
-    <div id="contentGrid" aria-hidden="true" style="display:none;"></div>
-
     <!-- HOME / PRAVAAH -->
-    <section id="section-home" class="section" role="region" aria-label="Pravaah — Home">
+    <section id="section-home" class="section" role="region" aria-label="Pravaah">
       <div class="section-header">
         <div class="section-eyebrow">Pravaah · प्रवाह</div>
         <h1 class="section-title">The <em>Flow</em></h1>
@@ -334,28 +408,33 @@
     </section>
 
     <!-- AUDIOS / SHRAVAN -->
-    <section id="section-audios" class="section" role="region" aria-label="Shravan — Audios">
+    <section id="section-audios" class="section" role="region" aria-label="Shravan">
       <div class="section-header">
         <div class="section-eyebrow">Shravan · श्रवण</div>
         <h1 class="section-title">What Is <em>Heard</em></h1>
         <p class="section-subtitle">Discourses, talks, and inquiries. Listen without conclusion.</p>
       </div>
-      <!-- JS injects .content-grid here -->
       <div id="audios-list"></div>
     </section>
 
     <!-- AMBIENT -->
-    <section id="section-ambient" class="section" role="region" aria-label="Ambient — Background sounds">
+    <section id="section-ambient" class="section" role="region" aria-label="Ambient">
       <div class="section-header">
         <div class="section-eyebrow">Ambient · परिवेश</div>
         <h1 class="section-title"><em>Surrounding</em> Sound</h1>
-        <p class="section-subtitle">Background sounds to accompany your presence. Soft, looping, gentle.</p>
+        <p class="section-subtitle">Background sounds for presence. Soft, looping, gentle.</p>
       </div>
+      <!--
+        #ambient-grid contains:
+          .ambient-now-playing  ← visible when a sound is playing
+          .ambient-cards-grid   ← always visible grid of cards with thumbnails
+        Both are injected by renderAmbient() in script.js.
+      -->
       <div id="ambient-grid"></div>
-      <div class="ambient-volume-row" style="margin-top:32px;">
-        <span class="ambient-volume-label">Volume</span>
-        <input type="range" id="ambient-volume" min="0" max="100" value="30"
-               aria-label="Ambient volume">
+      <!-- Fallback volume slider (shown if no ambient is playing yet) -->
+      <div class="ambient-volume-row" style="margin-top:24px;">
+        <span class="ambient-volume-label">Master volume</span>
+        <input type="range" id="ambient-volume" min="0" max="100" value="35" aria-label="Ambient volume">
       </div>
     </section>
 
@@ -364,27 +443,28 @@
       <div class="section-header">
         <div class="section-eyebrow">Videos · चलचित्र</div>
         <h1 class="section-title"><em>Moving</em> Light</h1>
-        <p class="section-subtitle">Rare recordings of sages and searchers. Watch once, slowly.</p>
+        <p class="section-subtitle">Rare recordings. Watch once, slowly.</p>
       </div>
       <div id="videos-grid"></div>
     </section>
 
     <!-- ECHO -->
-    <section id="section-echo" class="section" role="region" aria-label="Echo — Writings">
+    <section id="section-echo" class="section" role="region" aria-label="Echo">
       <div class="section-header">
         <div class="section-eyebrow">Echo · प्रतिध्वनि</div>
         <h1 class="section-title">Words That <em>Remain</em></h1>
-        <p class="section-subtitle">Writings, essays, and teachings. Read slowly. Let them settle.</p>
+        <p class="section-subtitle">Writings and teachings. Read slowly.</p>
       </div>
+      <!-- ⑨ echo-grid uses auto-fit responsive grid (see CSS above) -->
       <div id="echo-grid"></div>
     </section>
 
     <!-- IMAGES / DRISHYA -->
-    <section id="section-images" class="section" role="region" aria-label="Drishya — Images">
+    <section id="section-images" class="section" role="region" aria-label="Drishya">
       <div class="section-header">
         <div class="section-eyebrow">Drishya · दृश्य</div>
         <h1 class="section-title">What Is <em>Seen</em></h1>
-        <p class="section-subtitle">Still images for still minds. Gaze without grasping.</p>
+        <p class="section-subtitle">Still images for still minds.</p>
       </div>
       <div class="images-grid" id="images-grid"></div>
     </section>
@@ -394,7 +474,7 @@
       <div class="section-header">
         <div class="section-eyebrow">Books · ग्रंथ</div>
         <h1 class="section-title"><em>Deeper</em> Waters</h1>
-        <p class="section-subtitle">Full texts and sacred documents. Not for speed-reading.</p>
+        <p class="section-subtitle">Full texts. Not for speed-reading.</p>
       </div>
       <div id="books-grid"></div>
     </section>
@@ -402,48 +482,76 @@
   </main><!-- /#main -->
 </div><!-- /#app -->
 
-<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
      BOTTOM PLAYER BAR
-     Controls: discourse audio via #main-audio
-     Ambient plays independently via #ambient-audio
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+     Controls discourse audio (#main-audio).
+     Ambient plays independently via #ambient-audio.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
 <div id="bottom-player" role="region" aria-label="Media player">
-  <img id="player-thumb" src="" alt="Now playing">
+  <img id="player-thumb" src="" alt="Now playing thumbnail">
   <div class="player-info">
     <div id="player-title">—</div>
     <div id="player-speaker">—</div>
   </div>
   <div class="player-controls">
-    <button class="btn-prev" title="Previous track" aria-label="Previous">⟨</button>
-    <button id="btn-play-pause" title="Play / Pause" aria-label="Play or pause">▷</button>
-    <button class="btn-next" title="Next track" aria-label="Next">⟩</button>
+    <button class="btn-prev"      title="Previous" aria-label="Previous">⟨</button>
+    <button id="btn-play-pause"   title="Play/Pause" aria-label="Play or pause">▷</button>
+    <button class="btn-next"      title="Next" aria-label="Next">⟩</button>
   </div>
   <div class="player-progress">
     <span class="progress-time" id="time-elapsed">0:00</span>
-    <div class="progress-track" role="slider" aria-label="Seek">
+    <div class="progress-track" role="slider" aria-label="Seek position">
       <div class="progress-fill"></div>
       <div class="progress-thumb"></div>
     </div>
     <span class="progress-time" id="time-remain">0:00</span>
   </div>
-  <a id="player-download" href="#" download title="Download" aria-label="Download">↓</a>
+  <!-- ⑧ Volume slider — NEW -->
+  <input type="range" id="player-volume" min="0" max="100" value="80"
+         title="Volume" aria-label="Volume">
+  <a id="player-download" href="#" title="Download" aria-label="Download">↓</a>
 </div>
 
-<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     HIDDEN MEDIA ELEMENTS
-     These live in the DOM so the browser can preload
-     and maintain state even when not visible.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
-<!-- Discourse audio (controlled by bottom player bar) -->
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     HIDDEN AUDIO ELEMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<!-- Discourse audio — plays .mp3 files -->
 <audio id="main-audio"    preload="metadata" style="display:none;"></audio>
-<!-- Ambient audio (looped, independent of main player) -->
-<audio id="ambient-audio" preload="none"     style="display:none;" loop></audio>
+<!-- Ambient audio — plays .mp3 OR .mp4 audio tracks (all modern browsers support this) -->
+<audio id="ambient-audio" preload="none" loop style="display:none;"></audio>
 
-<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     OVERLAYS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     PDF READER MODAL  ← NEW ⑦
+     Opens PDFs in an embedded iframe.
+     Page number input lets users track and resume progress.
+     Progress saved to localStorage on modal close.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<div id="pdf-modal" role="dialog" aria-modal="true" aria-label="PDF reader">
+  <div class="pdf-modal-header">
+    <div>
+      <div id="pdf-modal-title">Loading…</div>
+      <div class="pdf-page-nav">
+        <button id="pdf-prev-page" aria-label="Previous page">⟨</button>
+        Page
+        <input id="pdf-page-num" type="number" min="1" value="1"
+               aria-label="Current page">
+        of <span id="pdf-total-pages">?</span>
+        <button id="pdf-next-page" aria-label="Next page">⟩</button>
+      </div>
+    </div>
+    <div class="pdf-modal-actions">
+      <a id="pdf-dl-btn" href="#" download class="btn-glow"
+         style="font-size:.65rem;padding:6px 14px;">↓ Save</a>
+      <button id="pdf-close-btn" class="btn-glow"
+              style="font-size:.65rem;padding:6px 14px;">✕ Close</button>
+    </div>
+  </div>
+  <iframe id="pdf-iframe" title="PDF Viewer" allow="fullscreen"></iframe>
+</div>
 
-<!-- Image lightbox -->
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     IMAGE LIGHTBOX
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
 <div id="lightbox" role="dialog" aria-modal="true" aria-label="Image viewer">
   <button id="lightbox-close" aria-label="Close">✕</button>
   <img id="lightbox-img" src="" alt="">
@@ -454,7 +562,9 @@
   </div>
 </div>
 
-<!-- Video modal -->
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     VIDEO MODAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
 <div id="video-modal" role="dialog" aria-modal="true" aria-label="Video player">
   <div class="video-modal-inner">
     <button class="video-modal-close" aria-label="Close video">✕ Close</button>
@@ -462,7 +572,9 @@
   </div>
 </div>
 
-<!-- TXT reader -->
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     TXT READER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
 <div id="txt-reader" role="dialog" aria-modal="true" aria-label="Text reader">
   <div class="reader-header">
     <div class="reader-title-block">
@@ -477,7 +589,6 @@
   <div class="reader-content-wrap">
     <div class="reader-content" id="reader-content"></div>
   </div>
-  <!-- Hidden secondary close (not shown to user, used by JS) -->
   <button id="reader-close" style="display:none;" aria-hidden="true"></button>
 </div>
 

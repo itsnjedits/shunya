@@ -1,0 +1,51 @@
+{
+  "site": {
+    "name": "ShunyaSpace",
+    "tagline": "A silence you can enter",
+    "subtitle": "शून्य — the void that holds everything"
+  },
+  "nav": [
+    {
+      "id": "home",
+      "label": "Pravaah",
+      "icon": "◌",
+      "hint": "The flow"
+    },
+    {
+      "id": "audios",
+      "label": "Shravan",
+      "icon": "◑",
+      "hint": "What is heard"
+    },
+    {
+      "id": "ambient",
+      "label": "Ambient",
+      "icon": "〰",
+      "hint": "Surrounding sound"
+    },
+    {
+      "id": "videos",
+      "label": "Videos",
+      "icon": "▷",
+      "hint": "Moving light"
+    },
+    {
+      "id": "echo",
+      "label": "Echo",
+      "icon": "∿",
+      "hint": "Words that remain"
+    },
+    {
+      "id": "images",
+      "label": "Drishya",
+      "icon": "◎",
+      "hint": "What is seen"
+    },
+    {
+      "id": "books",
+      "label": "Books",
+      "icon": "⊟",
+      "hint": "Deeper waters"
+    }
+  ]
+}

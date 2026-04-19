@@ -1,0 +1,37 @@
+{
+  "welcome": "You have arrived. There is nowhere else to be.",
+  "quotes": [
+    {
+      "text": "The quieter you become, the more you can hear.",
+      "author": "Ram Dass"
+    },
+    {
+      "text": "Emptiness is not a void. It is the ground of being.",
+      "author": "Krishnamurti"
+    },
+    {
+      "text": "You are not a drop in the ocean. You are the entire ocean in a drop.",
+      "author": "Rumi"
+    },
+    {
+      "text": "The present moment is the only moment available to us.",
+      "author": "Thich Nhat Hanh"
+    },
+    {
+      "text": "What you are looking for is what is looking.",
+      "author": "Francis of Assisi"
+    },
+    {
+      "text": "Silence is not the absence of sound but the presence of everything.",
+      "author": "Unknown"
+    },
+    {
+      "text": "In the beginner's mind there are many possibilities.",
+      "author": "Shunryu Suzuki"
+    },
+    {
+      "text": "The only way to make sense out of change is to plunge into it.",
+      "author": "Alan Watts"
+    }
+  ]
+}

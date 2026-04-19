@@ -1,19 +1,16 @@
 """
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  ShunyaSpace — generate_json.py  (v3 — fixed)
-  JSON Content Pipeline Automation Script
+  ShunyaSpace — generate_json.py  (v4)
 
-  Usage (run from anywhere):
+  Usage:
     python generate_json.py
 
-  Workflow:
-    Add files → Run script → JSON updates → Push to GitHub → Site updates ✓
-
-  FIX LOG:
-    - base_url now correctly set for local assets (books, echo, images)
-    - Relative web paths are correct relative to shunya/ root
-    - Thumbnail paths verified against actual folder structure
-    - Echo file paths include subfolder prefix (echo/pdfs/, echo/txt/)
+  What changed in v4:
+    ✓ Generates global.json → fixes "data/global.json 404"
+    ✓ Generates home.json  → fixes "data/home.json 404"
+    ✓ Ambient now scans .mp4 and .webm files (AMBIENT_EXTS)
+    ✓ Thumbnails matched case-insensitively
+    ✓ URL encoding note added (spaces handled in script.js)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
 
@@ -22,58 +19,39 @@ import json
 import re
 
 # ══════════════════════════════════════════════════════
-#  CONFIGURATION
-#  ↳ Edit the paths below to match your local setup
+#  CONFIGURATION  — edit paths to match your machine
 # ══════════════════════════════════════════════════════
 
-# Absolute path to the shunya website root folder
-SHUNYA_ROOT = r"Y:\WEB DEVELOPMENT\shunya"
-
-# JSON files are written to this folder (relative to SHUNYA_ROOT)
+SHUNYA_ROOT     = r"Y:\WEB DEVELOPMENT\shunya"
 DATA_OUTPUT_DIR = os.path.join(SHUNYA_ROOT, "data")
-
-# ── Media source folders ──────────────────────────────
-# Heavy media lives outside shunya/ in shunya_data/
-# Light content (books, echo, images) lives inside shunya/
 
 PATHS = {
     "audios":  r"Y:\WEB DEVELOPMENT\shunya_data\audios",
-    "ambient": r"Y:\WEB DEVELOPMENT\shunya_data\ambient",
+    "ambient": r"Y:\WEB DEVELOPMENT\shunya_data\ambient",   # contains .mp4 files
     "videos":  r"Y:\WEB DEVELOPMENT\shunya_data\videos",
     "books":   os.path.join(SHUNYA_ROOT, "books", "pdfs"),
-    "echo":    os.path.join(SHUNYA_ROOT, "echo"),       # sub-dirs: /pdfs/ and /txt/
+    "echo":    os.path.join(SHUNYA_ROOT, "echo"),
     "images":  os.path.join(SHUNYA_ROOT, "images"),
 }
 
-# ── GitHub Raw Base URLs ──────────────────────────────
-# Heavy media is hosted on separate GitHub repos.
-# Local assets use relative paths from shunya/ web root.
-#
-# CRITICAL: base_url + item.file = full URL that the browser will request.
-#
-# GitHub repos  → full raw URL (must end with /)
-# Local assets  → relative path from site root (must end with /)
-
 GITHUB_BASE_URLS = {
-    # GitHub-hosted (external repos)
     "audios":  "https://raw.githubusercontent.com/itsnjedits/audios/main/",
     "ambient": "https://raw.githubusercontent.com/itsnjedits/ambient/main/",
     "videos":  "https://raw.githubusercontent.com/itsnjedits/videos/main/",
-
-    # Local assets — relative to the shunya/ web root
-    # e.g. base "books/pdfs/" + file "book.pdf" → browser requests "books/pdfs/book.pdf"
+    # Local assets — relative to shunya/ web root
     "books":   "books/pdfs/",
-    "echo":    "echo/",        # file field already includes "pdfs/" or "txt/" prefix
+    "echo":    "echo/",
     "images":  "images/",
 }
 
-# ── Supported extensions ──────────────────────────────
-AUDIO_EXTS = {".mp3", ".wav", ".ogg", ".m4a", ".flac", ".aac"}
-VIDEO_EXTS = {".mp4", ".webm", ".mkv", ".mov", ".avi"}
-IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif"}
-PDF_EXTS   = {".pdf"}
-TXT_EXTS   = {".txt", ".md"}
-THUMB_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
+# ── Supported extensions ──
+AUDIO_EXTS   = {".mp3", ".wav", ".ogg", ".m4a", ".flac", ".aac"}
+AMBIENT_EXTS = {".mp3", ".wav", ".ogg", ".m4a", ".flac", ".aac", ".mp4", ".webm"}  # FIX: .mp4 added
+VIDEO_EXTS   = {".mp4", ".webm", ".mkv", ".mov", ".avi"}
+IMAGE_EXTS   = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif"}
+PDF_EXTS     = {".pdf"}
+TXT_EXTS     = {".txt", ".md"}
+THUMB_EXTS   = {".jpg", ".jpeg", ".png", ".webp"}
 
 
 # ══════════════════════════════════════════════════════
@@ -81,74 +59,123 @@ THUMB_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
 # ══════════════════════════════════════════════════════
 
 def clean_title(filename: str) -> str:
-    """
-    Convert raw filename to readable title.
-    Examples:
-      'the_nature_of_consciousness.mp3' → 'The Nature Of Consciousness'
-      'forest-rain (2).mp3'             → 'Forest Rain'
-      'be.here.now.pdf'                 → 'Be Here Now'
-    """
-    name = os.path.splitext(filename)[0]          # strip extension
-    name = re.sub(r'\s*\(\d+\)\s*$', '', name)    # strip trailing (1), (2)...
-    name = re.sub(r'[._\-]+', ' ', name)           # dots/underscores/dashes → space
-    name = re.sub(r'\s+', ' ', name).strip()       # collapse whitespace
-    return name.title()
+    """Convert raw filename → readable title."""
+    name = os.path.splitext(filename)[0]
+    name = re.sub(r'\s*\(\d+\)\s*$', '', name)     # strip trailing (1), (2)…
+    name = re.sub(r'[._\-]+', ' ', name)            # dots/underscores/dashes → space
+    return re.sub(r'\s+', ' ', name).strip().title()
 
 
-def list_files(folder: str, allowed_exts: set) -> list[str]:
-    """Return sorted filenames in folder that match allowed_exts. Skips sub-folders."""
+def list_files(folder: str, allowed_exts: set) -> list:
+    """Return sorted filenames in folder matching allowed_exts (skips subdirs)."""
     if not os.path.isdir(folder):
-        print(f"    ⚠  Folder not found, skipping: {folder}")
+        print(f"    ⚠  Not found, skipping: {folder}")
         return []
-    result = [
-        f for f in sorted(os.listdir(folder))
+    return sorted(
+        f for f in os.listdir(folder)
         if os.path.isfile(os.path.join(folder, f))
         and os.path.splitext(f)[1].lower() in allowed_exts
-    ]
-    return result
+    )
 
 
 def find_thumbnail(basename: str, thumbs_dir: str) -> str | None:
     """
-    Look for a thumbnail image named <basename>.<ext> inside thumbs_dir.
-    Returns the relative path "thumbnails/<basename>.<ext>" or None.
+    Find a thumbnail for <basename> in thumbs_dir.
+    Tries all THUMB_EXTS, case-insensitively.
+    Returns "thumbnails/<basename>.<ext>" or None.
+
+    NOTE: filenames with spaces are stored as-is; script.js encodes them
+          when building the final URL via encodeURIComponent.
     """
     if not os.path.isdir(thumbs_dir):
         return None
+
+    # Build a case-insensitive lookup of files in thumbnails/
+    try:
+        existing = {f.lower(): f for f in os.listdir(thumbs_dir)
+                    if os.path.isfile(os.path.join(thumbs_dir, f))}
+    except OSError:
+        return None
+
     for ext in THUMB_EXTS:
-        candidate = basename + ext
-        if os.path.isfile(os.path.join(thumbs_dir, candidate)):
-            return f"thumbnails/{candidate}"
+        candidate_lower = (basename + ext).lower()
+        if candidate_lower in existing:
+            return f"thumbnails/{existing[candidate_lower]}"
+
     return None
 
 
 def write_json(data: dict, output_path: str) -> None:
-    """Pretty-print data as JSON to output_path, creating directories as needed."""
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
     size = os.path.getsize(output_path)
-    print(f"    ✓  Saved ({size:,} bytes) → {output_path}")
+    print(f"    ✓  {size:,} bytes → {output_path}")
 
 
 # ══════════════════════════════════════════════════════
 #  SECTION GENERATORS
 # ══════════════════════════════════════════════════════
 
-def gen_audios() -> dict:
+def gen_global() -> dict:
     """
-    audios.json
-    Source:    shunya_data/audios/*.mp3 (etc.)
-    Thumbnails: shunya_data/audios/thumbnails/<name>.jpg
-    base_url:  https://raw.githubusercontent.com/itsnjedits/audios/main/
-    Full URL:  base_url + "filename.mp3"
+    global.json — site metadata + nav config.
+    FIX: This file was never generated → caused 'data/global.json 404' error.
     """
-    folder    = PATHS["audios"]
-    thumbs    = os.path.join(folder, "thumbnails")
-    base_url  = GITHUB_BASE_URLS["audios"]
-    files     = list_files(folder, AUDIO_EXTS)
+    return {
+        "site": {
+            "name":     "ShunyaSpace",
+            "tagline":  "A silence you can enter",
+            "subtitle": "शून्य — the void that holds everything",
+        },
+        "nav": [
+            {"id": "home",    "label": "Pravaah", "icon": "◌",  "hint": "The flow"},
+            {"id": "audios",  "label": "Shravan",  "icon": "◑",  "hint": "What is heard"},
+            {"id": "ambient", "label": "Ambient",  "icon": "〰", "hint": "Surrounding sound"},
+            {"id": "videos",  "label": "Videos",   "icon": "▷",  "hint": "Moving light"},
+            {"id": "echo",    "label": "Echo",     "icon": "∿",  "hint": "Words that remain"},
+            {"id": "images",  "label": "Drishya",  "icon": "◎",  "hint": "What is seen"},
+            {"id": "books",   "label": "Books",    "icon": "⊟",  "hint": "Deeper waters"},
+        ],
+    }
 
-    items = []
+
+def gen_home() -> dict:
+    """
+    home.json — welcome text + rotating quotes.
+    FIX: This file was never generated → caused 'data/home.json 404' error.
+    Edit the quotes list freely — the site picks one at random on each load.
+    """
+    return {
+        "welcome": "You have arrived. There is nowhere else to be.",
+        "quotes": [
+            {"text": "The quieter you become, the more you can hear.",
+             "author": "Ram Dass"},
+            {"text": "Emptiness is not a void. It is the ground of being.",
+             "author": "Krishnamurti"},
+            {"text": "You are not a drop in the ocean. You are the entire ocean in a drop.",
+             "author": "Rumi"},
+            {"text": "The present moment is the only moment available to us.",
+             "author": "Thich Nhat Hanh"},
+            {"text": "What you are looking for is what is looking.",
+             "author": "Francis of Assisi"},
+            {"text": "Silence is not the absence of sound but the presence of everything.",
+             "author": "Unknown"},
+            {"text": "In the beginner's mind there are many possibilities.",
+             "author": "Shunryu Suzuki"},
+            {"text": "The only way to make sense out of change is to plunge into it.",
+             "author": "Alan Watts"},
+        ],
+    }
+
+
+def gen_audios() -> dict:
+    """audios.json — discourse audio files (.mp3 etc.)"""
+    folder   = PATHS["audios"]
+    thumbs   = os.path.join(folder, "thumbnails")
+    base_url = GITHUB_BASE_URLS["audios"]
+    files    = list_files(folder, AUDIO_EXTS)
+    items    = []
     for i, fname in enumerate(files, 1):
         base = os.path.splitext(fname)[0]
         items.append({
@@ -157,24 +184,21 @@ def gen_audios() -> dict:
             "file":      fname,
             "thumbnail": find_thumbnail(base, thumbs) or "",
         })
-
     print(f"    → {len(items)} audio file(s)")
     return {"type": "audio", "base_url": base_url, "items": items}
 
 
 def gen_ambient() -> dict:
     """
-    ambient.json
-    Source:    shunya_data/ambient/*.mp3
-    Thumbnails: shunya_data/ambient/thumbnails/
-    base_url:  https://raw.githubusercontent.com/itsnjedits/ambient/main/
+    ambient.json — background sounds.
+    FIX: Now uses AMBIENT_EXTS which includes .mp4 and .webm.
+    Previously used AUDIO_EXTS which excluded .mp4 → ambient section was always empty.
     """
-    folder    = PATHS["ambient"]
-    thumbs    = os.path.join(folder, "thumbnails")
-    base_url  = GITHUB_BASE_URLS["ambient"]
-    files     = list_files(folder, AUDIO_EXTS)
-
-    items = []
+    folder   = PATHS["ambient"]
+    thumbs   = os.path.join(folder, "thumbnails")
+    base_url = GITHUB_BASE_URLS["ambient"]
+    files    = list_files(folder, AMBIENT_EXTS)   # ← uses AMBIENT_EXTS, not AUDIO_EXTS
+    items    = []
     for i, fname in enumerate(files, 1):
         base = os.path.splitext(fname)[0]
         items.append({
@@ -183,24 +207,17 @@ def gen_ambient() -> dict:
             "file":      fname,
             "thumbnail": find_thumbnail(base, thumbs) or "",
         })
-
-    print(f"    → {len(items)} ambient file(s)")
+    print(f"    → {len(items)} ambient file(s) (.mp3/.mp4/.webm all supported)")
     return {"type": "ambient", "base_url": base_url, "items": items}
 
 
 def gen_videos() -> dict:
-    """
-    videos.json
-    Source:    shunya_data/videos/*.mp4
-    Thumbnails: shunya_data/videos/thumbnails/
-    base_url:  https://raw.githubusercontent.com/itsnjedits/videos/main/
-    """
-    folder    = PATHS["videos"]
-    thumbs    = os.path.join(folder, "thumbnails")
-    base_url  = GITHUB_BASE_URLS["videos"]
-    files     = list_files(folder, VIDEO_EXTS)
-
-    items = []
+    """videos.json — video files."""
+    folder   = PATHS["videos"]
+    thumbs   = os.path.join(folder, "thumbnails")
+    base_url = GITHUB_BASE_URLS["videos"]
+    files    = list_files(folder, VIDEO_EXTS)
+    items    = []
     for i, fname in enumerate(files, 1):
         base = os.path.splitext(fname)[0]
         items.append({
@@ -209,27 +226,17 @@ def gen_videos() -> dict:
             "file":      fname,
             "thumbnail": find_thumbnail(base, thumbs) or "",
         })
-
     print(f"    → {len(items)} video file(s)")
     return {"type": "video", "base_url": base_url, "items": items}
 
 
 def gen_books() -> dict:
-    """
-    books.json
-    Source:    shunya/books/pdfs/*.pdf
-    Thumbnails: shunya/books/pdfs/thumbnails/
-    base_url:  "books/pdfs/"  ← relative to shunya/ web root
-    Full URL:  "books/pdfs/book.pdf"
-
-    FIX: was empty "" → browser tried to fetch "book.pdf" from root → 404
-    """
-    folder    = PATHS["books"]
-    thumbs    = os.path.join(folder, "thumbnails")
-    base_url  = GITHUB_BASE_URLS["books"]   # "books/pdfs/"
-    files     = list_files(folder, PDF_EXTS)
-
-    items = []
+    """books.json — PDF books."""
+    folder   = PATHS["books"]
+    thumbs   = os.path.join(folder, "thumbnails")
+    base_url = GITHUB_BASE_URLS["books"]
+    files    = list_files(folder, PDF_EXTS)
+    items    = []
     for i, fname in enumerate(files, 1):
         base = os.path.splitext(fname)[0]
         items.append({
@@ -238,95 +245,53 @@ def gen_books() -> dict:
             "file":      fname,
             "thumbnail": find_thumbnail(base, thumbs) or "",
         })
-
     print(f"    → {len(items)} book(s)")
     return {"type": "book", "base_url": base_url, "items": items}
 
 
 def gen_echo() -> dict:
-    """
-    echo.json  ← special structure with separate pdfs and txts arrays
-
-    Source PDFs: shunya/echo/pdfs/*.pdf
-    Source TXTs: shunya/echo/txt/*.txt
-    base_url:    "echo/"  ← relative to shunya/ web root
-
-    file field includes sub-path, so:
-      PDF: file = "pdfs/book.pdf"  → URL = "echo/pdfs/book.pdf"   ✓
-      TXT: file = "txt/essay.txt"  → URL = "echo/txt/essay.txt"   ✓
-
-    Thumbnails:
-      PDF thumb:  "pdfs/thumbnails/book.jpg" → URL = "echo/pdfs/thumbnails/book.jpg" ✓
-      TXT thumb:  "txt/thumbnails/essay.jpg" → URL = "echo/txt/thumbnails/essay.jpg" ✓
-
-    FIX: was base_url="" → file paths resolved to "pdfs/book.pdf" missing "echo/" prefix
-    """
+    """echo.json — writings: PDFs + TXT files."""
     echo_root = PATHS["echo"]
-    base_url  = GITHUB_BASE_URLS["echo"]    # "echo/"
+    base_url  = GITHUB_BASE_URLS["echo"]
 
-    # ── PDFs ──────────────────────────────────
+    # PDFs
     pdf_dir    = os.path.join(echo_root, "pdfs")
     pdf_thumbs = os.path.join(pdf_dir, "thumbnails")
-    pdf_files  = list_files(pdf_dir, PDF_EXTS)
-
     pdfs = []
-    for i, fname in enumerate(pdf_files, 1):
+    for i, fname in enumerate(list_files(pdf_dir, PDF_EXTS), 1):
         base  = os.path.splitext(fname)[0]
         thumb = find_thumbnail(base, pdf_thumbs)
         pdfs.append({
             "id":        f"echo_pdf_{i}",
             "title":     clean_title(fname),
-            "file":      f"pdfs/{fname}",                         # → echo/pdfs/fname
-            "thumbnail": f"pdfs/{thumb}" if thumb else "",        # → echo/pdfs/thumbnails/...
+            "file":      f"pdfs/{fname}",
+            "thumbnail": f"pdfs/{thumb}" if thumb else "",
         })
 
-    # ── TXTs ──────────────────────────────────
+    # TXTs
     txt_dir    = os.path.join(echo_root, "txt")
     txt_thumbs = os.path.join(txt_dir, "thumbnails")
-    txt_files  = list_files(txt_dir, TXT_EXTS)
-
     txts = []
-    for i, fname in enumerate(txt_files, 1):
+    for i, fname in enumerate(list_files(txt_dir, TXT_EXTS), 1):
         base  = os.path.splitext(fname)[0]
         thumb = find_thumbnail(base, txt_thumbs)
         txts.append({
             "id":        f"echo_txt_{i}",
             "title":     clean_title(fname),
-            "file":      f"txt/{fname}",                          # → echo/txt/fname
-            "thumbnail": f"txt/{thumb}" if thumb else "",         # → echo/txt/thumbnails/...
+            "file":      f"txt/{fname}",
+            "thumbnail": f"txt/{thumb}" if thumb else "",
         })
 
     print(f"    → {len(pdfs)} PDF(s), {len(txts)} TXT(s)")
-    return {
-        "type":     "echo",
-        "base_url": base_url,
-        "pdfs":     pdfs,
-        "txts":     txts,
-    }
+    return {"type": "echo", "base_url": base_url, "pdfs": pdfs, "txts": txts}
 
 
 def gen_images() -> dict:
-    """
-    images.json
-    Source:    shunya/images/*.jpg  (etc.)
-    base_url:  "images/"  ← relative to shunya/ web root
-    Full URL:  "images/photo.jpg"
-
-    No thumbnails for images (the images ARE the thumbnails).
-
-    FIX: was base_url="" → browser tried "photo.jpg" from root → 404
-    """
-    folder    = PATHS["images"]
-    base_url  = GITHUB_BASE_URLS["images"]  # "images/"
-    files     = list_files(folder, IMAGE_EXTS)
-
-    items = []
-    for i, fname in enumerate(files, 1):
-        items.append({
-            "id":   f"img_{i}",
-            "file": fname,
-        })
-
+    """images.json — image gallery (no thumbnails; the image IS the thumbnail)."""
+    folder   = PATHS["images"]
+    base_url = GITHUB_BASE_URLS["images"]
+    files    = list_files(folder, IMAGE_EXTS)
+    items    = [{"id": f"img_{i}", "file": fname} for i, fname in enumerate(files, 1)]
     print(f"    → {len(items)} image(s)")
     return {"type": "images", "base_url": base_url, "items": items}
 
@@ -335,9 +300,12 @@ def gen_images() -> dict:
 #  MAIN
 # ══════════════════════════════════════════════════════
 
+# Order matters — global/home first so site works even if media is missing
 SECTIONS = [
+    ("global.json",  gen_global),    # NEW — was causing 404 errors
+    ("home.json",    gen_home),      # NEW — was causing 404 errors
     ("audios.json",  gen_audios),
-    ("ambient.json", gen_ambient),
+    ("ambient.json", gen_ambient),   # FIXED — now detects .mp4 files
     ("videos.json",  gen_videos),
     ("books.json",   gen_books),
     ("echo.json",    gen_echo),
@@ -348,7 +316,7 @@ SECTIONS = [
 def main() -> None:
     print()
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    print("  ShunyaSpace — JSON Generator  (v3)")
+    print("  ShunyaSpace — JSON Generator  (v4)")
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     print()
 
@@ -364,13 +332,14 @@ def main() -> None:
         print()
 
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    print(f"  Done: {ok}/{len(SECTIONS)} JSON files updated.")
+    print(f"  Done: {ok}/{len(SECTIONS)} JSON files generated.")
     print()
-    print("  ⚠  REMINDER: You must run this from a local")
-    print("     web server, not file:// — otherwise the")
-    print("     browser will block fetch() calls.")
-    print("     Quick server: python -m http.server 8080")
-    print("     Then open:    http://localhost:8080")
+    print("  ⚠  Serve from a web server, not file://")
+    print("     cd shunya && python -m http.server 8080")
+    print("     Open: http://localhost:8080")
+    print()
+    print("  ⚠  Filenames with spaces are fine — script.js")
+    print("     encodes them automatically via encodeURIComponent")
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     print()
 
