@@ -4,362 +4,31 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ShunyaSpace</title>
-  <meta name="description" content="A silence you can enter.">
-
+  <meta name="description" content="A silence you can enter. A digital space for introspection.">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="styles.css">
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Outfit:wght@200;300;400;500&display=swap" rel="stylesheet">
-
-  <style>
-    /* ══════════════════════════════════════════════════
-       COMPONENT STYLES  (self-contained — safe to keep
-       even if styles.css is replaced)
-    ══════════════════════════════════════════════════ */
-
-    /* ── Generic content grid ── */
-    .content-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 16px;
-    }
-
-    /* ── Generic content card ── */
-    .content-card {
-      background: var(--surface);
-      border: 1px solid var(--border-soft);
-      border-radius: var(--radius);
-      overflow: hidden;
-      cursor: pointer;
-      transition: border-color .3s var(--ease-silk), transform .3s var(--ease-silk), background .3s;
-      position: relative;
-    }
-    .content-card:hover {
-      border-color: var(--border);
-      transform: translateY(-2px);
-      background: var(--raised);
-    }
-    .content-card.is-active {
-      border-color: var(--violet);
-      background: rgba(124,58,237,.1);
-    }
-    .content-card.is-active::before {
-      content: '';
-      position: absolute; left: 0; top: 0; bottom: 0;
-      width: 3px;
-      background: linear-gradient(180deg, var(--violet), var(--rose));
-    }
-
-    /* ── Card thumbnail ── */
-    .card-thumb {
-      width: 100%; aspect-ratio: 16/9;
-      background: var(--raised);
-      overflow: hidden;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .card-thumb img {
-      width: 100%; height: 100%; object-fit: cover;
-      opacity: 0;
-      transition: opacity .5s ease, transform .5s var(--ease-silk);
-    }
-    .card-thumb img.loaded { opacity: 1; }
-    .content-card:hover .card-thumb img { transform: scale(1.04); }
-    .card-thumb-placeholder { font-size: 1.8rem; color: var(--text-dim); opacity: .35; }
-
-    /* ── Card text ── */
-    .card-info { padding: 12px 14px 14px; }
-    .card-badge {
-      display: inline-block; font-size: .58rem; letter-spacing: .18em;
-      text-transform: uppercase; padding: 2px 7px; border-radius: 20px; margin-bottom: 6px;
-      background: rgba(124,58,237,.12); color: var(--orchid);
-      border: 1px solid rgba(124,58,237,.25); font-weight: 500;
-    }
-    .echo-pdf .card-badge { background: rgba(244,114,182,.1); color: var(--rose); border-color: rgba(244,114,182,.25); }
-    .echo-txt .card-badge { background: rgba(96,165,250,.1);  color: var(--blue); border-color: rgba(96,165,250,.25); }
-    .card-title {
-      font-family: var(--font-serif); font-size: .92rem;
-      color: var(--text-primary); line-height: 1.3;
-      display: -webkit-box; -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical; overflow: hidden;
-    }
-
-    /* ── Book action buttons ── */
-    .card-actions { display: flex; gap: 8px; padding: 0 14px 12px; }
-    .btn-read, .btn-dl {
-      flex: 1; padding: 6px 0; border-radius: 6px;
-      font-size: .62rem; letter-spacing: .1em; text-align: center;
-      text-transform: uppercase; transition: all .25s; font-family: var(--font-ui);
-    }
-    .btn-read {
-      background: rgba(124,58,237,.12); border: 1px solid var(--border);
-      color: var(--orchid); cursor: pointer;
-    }
-    .btn-read:hover { background: var(--violet); color: #fff; border-color: var(--violet); }
-    .btn-dl {
-      background: transparent; border: 1px solid var(--border-soft);
-      color: var(--text-dim); text-decoration: none;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .btn-dl:hover { color: var(--text-muted); border-color: var(--text-muted); }
-
-    /* ─────────────────────────────────────────────────
-       AMBIENT SECTION — thumbnails + now-playing bar
-    ───────────────────────────────────────────────── */
-
-    /* Now-playing strip at top of ambient section */
-    .ambient-now-playing {
-      display: flex; align-items: center; gap: 16px;
-      background: rgba(124,58,237,.08);
-      border: 1px solid var(--violet);
-      border-radius: var(--radius); padding: 14px 18px;
-      margin-bottom: 24px;
-      animation: slideUp .35s var(--ease-calm) both;
-    }
-    .ambient-np-thumb {
-      width: 56px; height: 56px; border-radius: 8px; flex-shrink: 0;
-      background-size: cover; background-position: center;
-      background-color: var(--raised);
-      border: 1px solid var(--border-soft);
-    }
-    .ambient-np-thumb--empty {
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.4rem; color: var(--orchid); opacity: .7;
-    }
-    .ambient-np-info { flex: 1; min-width: 0; }
-    .ambient-np-label { font-size: .58rem; letter-spacing: .2em; color: var(--orchid); text-transform: uppercase; }
-    .ambient-np-title {
-      font-family: var(--font-serif); font-size: 1rem;
-      color: var(--text-primary); white-space: nowrap;
-      overflow: hidden; text-overflow: ellipsis;
-    }
-    .ambient-np-controls { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-    .ambient-vol-slider {
-      -webkit-appearance: none; width: 80px; height: 2px;
-      background: var(--raised); border-radius: 2px; outline: none; cursor: pointer;
-    }
-    .ambient-vol-slider::-webkit-slider-thumb {
-      -webkit-appearance: none; width: 12px; height: 12px;
-      border-radius: 50%; background: var(--orchid); cursor: pointer;
-    }
-    .ambient-stop-btn {
-      background: none; border: 1px solid var(--border); border-radius: 6px;
-      color: var(--text-muted); font-size: .68rem; letter-spacing: .1em;
-      padding: 5px 10px; cursor: pointer; font-family: var(--font-ui);
-      transition: all .2s; white-space: nowrap;
-    }
-    .ambient-stop-btn:hover { border-color: var(--rose); color: var(--rose); }
-
-    /* Ambient cards grid */
-    .ambient-cards-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-      gap: 14px;
-    }
-    .ambient-card {
-      background: var(--surface); border: 1px solid var(--border-soft);
-      border-radius: var(--radius); overflow: hidden;
-      cursor: pointer; transition: all .35s var(--ease-silk);
-    }
-    .ambient-card:hover { border-color: var(--border); transform: translateY(-2px); }
-    .ambient-card.playing { border-color: var(--violet); background: rgba(124,58,237,.08); }
-
-    /* Ambient thumbnail */
-    .ambient-thumb {
-      width: 100%; aspect-ratio: 16/9;
-      background: var(--raised);
-      display: flex; align-items: center; justify-content: center;
-      overflow: hidden;
-    }
-    .ambient-thumb img {
-      width: 100%; height: 100%; object-fit: cover;
-      opacity: 0; transition: opacity .5s ease;
-    }
-    .ambient-thumb img.loaded { opacity: 1; }
-    .ambient-thumb--empty { font-size: 2rem; color: var(--orchid); opacity: .35; }
-
-    .ambient-card-info { padding: 12px 14px 14px; }
-    .ambient-title { font-family: var(--font-serif); font-size: .9rem; color: var(--text-primary); }
-    .ambient-status {
-      margin-top: 4px; font-size: .65rem; letter-spacing: .12em;
-      color: var(--text-dim); text-transform: uppercase;
-    }
-    .ambient-card.playing .ambient-status { color: var(--orchid); animation: pulse-text 2s infinite; }
-    @keyframes pulse-text { 0%,100%{opacity:.7} 50%{opacity:1} }
-
-    /* ── Old ambient-grid reference (used by JS to find the container) ── */
-    #ambient-grid { /* container for both now-playing + cards-grid */ }
-
-    /* ─────────────────────────────────────────────────
-       ECHO GRID — responsive  ← FIX ⑨
-    ───────────────────────────────────────────────── */
-    #echo-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));  /* auto-fit → wraps */
-      gap: 16px;
-    }
-
-    /* ─────────────────────────────────────────────────
-       BOTTOM PLAYER BAR  (with volume slider ← FIX ⑧)
-    ───────────────────────────────────────────────── */
-    #bottom-player {
-      position: fixed; bottom: 0;
-      left: var(--nav-w); right: 0;
-      height: 72px;
-      display: none; align-items: center;
-      gap: 14px; padding: 0 24px;
-      background: rgba(10,9,22,.97);
-      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-      border-top: 1px solid var(--border); z-index: 200;
-    }
-    #bottom-player.visible { display: flex; animation: slideUp .35s var(--ease-calm) both; }
-    @keyframes slideUp { from{transform:translateY(100%);opacity:0} to{transform:none;opacity:1} }
-
-    #player-thumb {
-      width: 44px; height: 44px; border-radius: 6px; object-fit: cover;
-      flex-shrink: 0; border: 1px solid var(--border-soft);
-      background: var(--raised); display: none;
-    }
-    .player-info { flex: 1; min-width: 0; }
-    #player-title {
-      font-family: var(--font-serif); font-size: .9rem;
-      color: var(--text-primary);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    #player-speaker { font-size: .65rem; color: var(--orchid); letter-spacing: .08em; margin-top: 1px; }
-
-    .player-controls { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-    .btn-prev, .btn-next {
-      background: none; border: none; cursor: pointer;
-      color: var(--text-muted); font-size: .85rem; padding: 4px 6px; transition: color .2s;
-    }
-    .btn-prev:hover, .btn-next:hover { color: var(--orchid); }
-    #btn-play-pause {
-      width: 38px; height: 38px; border-radius: 50%;
-      background: var(--violet); border: none; color: #fff; font-size: .9rem;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; transition: background .25s, transform .2s;
-    }
-    #btn-play-pause:hover { background: var(--purple); transform: scale(1.06); }
-
-    .player-progress { flex: 2; display: flex; align-items: center; gap: 8px; min-width: 0; }
-    .progress-time { font-size: .62rem; color: var(--text-dim); font-variant-numeric: tabular-nums; flex-shrink: 0; }
-    .progress-track {
-      flex: 1; height: 2px; background: var(--raised);
-      border-radius: 2px; cursor: pointer; position: relative;
-    }
-    .progress-track:hover { height: 4px; transition: height .15s; }
-    .progress-fill {
-      height: 100%; background: linear-gradient(90deg, var(--violet), var(--orchid));
-      border-radius: 2px; width: 0%; transition: width .1s linear; pointer-events: none;
-    }
-    .progress-thumb {
-      position: absolute; right: -4px; top: 50%; transform: translateY(-50%);
-      width: 10px; height: 10px; border-radius: 50%; background: var(--orchid);
-      opacity: 0; transition: opacity .2s; pointer-events: none;
-    }
-    .progress-track:hover .progress-thumb { opacity: 1; }
-
-    /* Volume slider — new ⑧ */
-    #player-volume {
-      -webkit-appearance: none; width: 70px; height: 2px;
-      background: var(--raised); border-radius: 2px;
-      outline: none; cursor: pointer; flex-shrink: 0;
-    }
-    #player-volume::-webkit-slider-thumb {
-      -webkit-appearance: none; width: 10px; height: 10px;
-      border-radius: 50%; background: var(--orchid); cursor: pointer;
-    }
-
-    #player-download {
-      flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%;
-      border: 1px solid var(--border-soft); color: var(--text-muted);
-      font-size: .85rem; text-decoration: none;
-      display: flex; align-items: center; justify-content: center; transition: all .25s;
-    }
-    #player-download:hover { border-color: var(--orchid); color: var(--orchid); }
-
-    /* Mobile player */
-    @media (max-width: 900px) {
-      #bottom-player { left: 0; padding: 0 14px; gap: 10px; }
-      .player-progress { display: none; }
-      #player-volume  { display: none; }
-    }
-
-    /* ─────────────────────────────────────────────────
-       PDF READER MODAL  ← NEW FEATURE ⑦
-    ───────────────────────────────────────────────── */
-    #pdf-modal {
-      position: fixed; inset: 0;
-      background: rgba(7,6,15,.96); z-index: 1000;
-      display: none; flex-direction: column;
-      animation: fadeIn .3s ease;
-    }
-    #pdf-modal.open { display: flex; }
-
-    .pdf-modal-header {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 16px; padding: 14px 24px;
-      background: rgba(13,11,26,.98);
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0; flex-wrap: wrap;
-    }
-    #pdf-modal-title {
-      font-family: var(--font-serif); font-size: 1rem;
-      color: var(--text-primary); margin-bottom: 6px;
-    }
-    .pdf-page-nav {
-      display: flex; align-items: center; gap: 8px;
-      font-size: .72rem; color: var(--text-muted);
-    }
-    .pdf-page-nav button {
-      background: none; border: 1px solid var(--border-soft);
-      color: var(--text-muted); border-radius: 5px;
-      padding: 3px 8px; cursor: pointer; font-size: .7rem;
-      transition: all .2s; font-family: var(--font-ui);
-    }
-    .pdf-page-nav button:hover { border-color: var(--orchid); color: var(--orchid); }
-    #pdf-page-num {
-      width: 48px; text-align: center;
-      background: var(--raised); border: 1px solid var(--border);
-      border-radius: 5px; color: var(--text-primary);
-      padding: 3px 6px; font-size: .72rem; font-family: var(--font-ui);
-    }
-    #pdf-page-num:focus { outline: none; border-color: var(--orchid); }
-    .pdf-modal-actions { display: flex; align-items: center; gap: 10px; }
-
-    #pdf-iframe {
-      flex: 1; border: none; width: 100%;
-      background: #1a1a1a;
-    }
-
-    /* ─────────────────────────────────────────────────
-       SHARED MODAL ANIMATIONS
-    ───────────────────────────────────────────────── */
-    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-  </style>
 </head>
 
 <body>
 
-<!-- Stars canvas -->
-<canvas id="stars-canvas"
-  style="position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.6;"></canvas>
+<!-- Stars -->
+<canvas id="stars-canvas" style="position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.6;"></canvas>
 
-<!-- Mobile hamburger -->
+<!-- Mobile toggle -->
 <button id="mobile-menu-toggle" aria-label="Open menu">
   <span></span><span></span><span></span>
 </button>
 
-<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     #app — the flex root (sidebar + main side-by-side)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
-<div id="app" style="opacity:0; transition: opacity .6s ease;">
+<!-- ══════════════════════════════════════════════════════
+     #app — flex root: sidebar + main
+══════════════════════════════════════════════════════ -->
+<div id="app">
 
   <!-- ── SIDEBAR ── -->
   <aside id="sidebar" aria-label="Navigation">
-    <div class="sidebar-logo">
+
+    <!-- Logo — click opens About modal -->
+    <div class="sidebar-logo" role="button" tabindex="0" aria-label="About ShunyaSpace" title="About ShunyaSpace">
       <div class="logo-mark">
         <svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
           <defs>
@@ -375,30 +44,28 @@
         </svg>
       </div>
       <div id="logo-name" class="logo-name">ShunyaSpace</div>
-      <div id="logo-sub"  class="logo-sub">शून्य</div>
+      <div id="logo-sub"  class="logo-sub">शून्य — the void that holds everything</div>
     </div>
 
     <nav aria-label="Site sections">
-      <ul class="nav-list" id="nav-list">
-        <!-- Injected by script.js — falls back to FALLBACK_NAV if global.json missing -->
-      </ul>
+      <ul class="nav-list" id="nav-list"></ul>
     </nav>
 
     <div class="sidebar-bottom">
       <div class="ambient-mini">
         <div class="ambient-mini-title">
           <span>No ambient</span>
-          <span class="ambient-mini-stop" title="Stop ambient">✕</span>
+          <span class="ambient-mini-stop" title="Stop">✕</span>
         </div>
       </div>
       <button id="btn-random"><span>✦</span> Random Wisdom</button>
     </div>
   </aside>
 
-  <!-- ── MAIN CONTENT ── -->
+  <!-- ── MAIN ── -->
   <main id="main">
 
-    <!-- HOME / PRAVAAH -->
+    <!-- HOME -->
     <section id="section-home" class="section" role="region" aria-label="Pravaah">
       <div class="section-header">
         <div class="section-eyebrow">Pravaah · प्रवाह</div>
@@ -407,7 +74,7 @@
       <div id="home-inner"></div>
     </section>
 
-    <!-- AUDIOS / SHRAVAN -->
+    <!-- AUDIOS -->
     <section id="section-audios" class="section" role="region" aria-label="Shravan">
       <div class="section-header">
         <div class="section-eyebrow">Shravan · श्रवण</div>
@@ -424,17 +91,10 @@
         <h1 class="section-title"><em>Surrounding</em> Sound</h1>
         <p class="section-subtitle">Background sounds for presence. Soft, looping, gentle.</p>
       </div>
-      <!--
-        #ambient-grid contains:
-          .ambient-now-playing  ← visible when a sound is playing
-          .ambient-cards-grid   ← always visible grid of cards with thumbnails
-        Both are injected by renderAmbient() in script.js.
-      -->
       <div id="ambient-grid"></div>
-      <!-- Fallback volume slider (shown if no ambient is playing yet) -->
-      <div class="ambient-volume-row" style="margin-top:24px;">
-        <span class="ambient-volume-label">Master volume</span>
-        <input type="range" id="ambient-volume" min="0" max="100" value="35" aria-label="Ambient volume">
+      <div class="ambient-volume-row">
+        <span class="ambient-volume-label">Volume</span>
+        <input type="range" id="ambient-volume" min="0" max="100" value="30" aria-label="Ambient volume">
       </div>
     </section>
 
@@ -453,18 +113,17 @@
       <div class="section-header">
         <div class="section-eyebrow">Echo · प्रतिध्वनि</div>
         <h1 class="section-title">Words That <em>Remain</em></h1>
-        <p class="section-subtitle">Writings and teachings. Read slowly.</p>
+        <p class="section-subtitle">Writings and teachings. Read slowly. Let them settle.</p>
       </div>
-      <!-- ⑨ echo-grid uses auto-fit responsive grid (see CSS above) -->
       <div id="echo-grid"></div>
     </section>
 
-    <!-- IMAGES / DRISHYA -->
+    <!-- IMAGES -->
     <section id="section-images" class="section" role="region" aria-label="Drishya">
       <div class="section-header">
         <div class="section-eyebrow">Drishya · दृश्य</div>
         <h1 class="section-title">What Is <em>Seen</em></h1>
-        <p class="section-subtitle">Still images for still minds.</p>
+        <p class="section-subtitle">Still images for still minds. Gaze without grasping.</p>
       </div>
       <div class="images-grid" id="images-grid"></div>
     </section>
@@ -479,92 +138,155 @@
       <div id="books-grid"></div>
     </section>
 
-  </main><!-- /#main -->
+  </main>
 </div><!-- /#app -->
 
-<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     BOTTOM PLAYER BAR
-     Controls discourse audio (#main-audio).
-     Ambient plays independently via #ambient-audio.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
-<div id="bottom-player" role="region" aria-label="Media player">
-  <img id="player-thumb" src="" alt="Now playing thumbnail">
-  <div class="player-info">
-    <div id="player-title">—</div>
-    <div id="player-speaker">—</div>
-  </div>
-  <div class="player-controls">
-    <button class="btn-prev"      title="Previous" aria-label="Previous">⟨</button>
-    <button id="btn-play-pause"   title="Play/Pause" aria-label="Play or pause">▷</button>
-    <button class="btn-next"      title="Next" aria-label="Next">⟩</button>
-  </div>
-  <div class="player-progress">
-    <span class="progress-time" id="time-elapsed">0:00</span>
-    <div class="progress-track" role="slider" aria-label="Seek position">
-      <div class="progress-fill"></div>
-      <div class="progress-thumb"></div>
+<!-- ══════════════════════════════════════════════════════
+     AUDIO PLAYER BAR (SoundAura-inspired, ShunyaSpace palette)
+══════════════════════════════════════════════════════ -->
+<div id="bottom-player" role="region" aria-label="Audio player">
+
+  <!-- Seek row -->
+  <div class="player-seek-row">
+    <span class="player-time" id="time-elapsed">0:00</span>
+    <div class="seek-track" role="slider" aria-label="Seek position">
+      <div class="seek-fill"></div>
+      <div class="seek-thumb"></div>
     </div>
-    <span class="progress-time" id="time-remain">0:00</span>
+    <span class="player-time right" id="time-remain">0:00</span>
   </div>
-  <!-- ⑧ Volume slider — NEW -->
-  <input type="range" id="player-volume" min="0" max="100" value="80"
-         title="Volume" aria-label="Volume">
-  <a id="player-download" href="#" title="Download" aria-label="Download">↓</a>
+
+  <!-- Controls row -->
+  <div class="player-controls-row">
+    <!-- Thumbnail -->
+    <img id="player-thumb" src="" alt="Now playing">
+
+    <!-- Info -->
+    <div class="player-info">
+      <div id="player-title">—</div>
+      <div id="player-speaker">—</div>
+    </div>
+
+    <!-- Transport -->
+    <div class="player-transport">
+      <button class="btn-skip" id="btn-skip-back" title="−10 seconds">−10</button>
+
+      <button class="btn-prev-next" id="btn-prev" title="Previous" aria-label="Previous">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+          <polygon points="19,20 9,12 19,4"/><line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2"/>
+        </svg>
+      </button>
+
+      <button id="btn-play-pause" title="Play / Pause" aria-label="Play or pause">
+        <!-- Icon set by JS -->
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+      </button>
+
+      <button class="btn-prev-next" id="btn-next" title="Next" aria-label="Next">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+          <polygon points="5,4 15,12 5,20"/><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"/>
+        </svg>
+      </button>
+
+      <button class="btn-skip" id="btn-skip-fwd" title="+10 seconds">+10</button>
+    </div>
+
+    <!-- Volume -->
+    <div class="player-vol">
+      <button class="btn-vol-icon" id="btn-vol-mute" title="Mute" aria-label="Mute">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+        </svg>
+      </button>
+      <input type="range" id="player-volume" min="0" max="100" value="85" aria-label="Volume">
+    </div>
+
+    <!-- Download -->
+    <a id="player-download" href="#" title="Download" aria-label="Download">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+    </a>
+  </div>
 </div>
 
-<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<!-- ══════════════════════════════════════════════════════
      HIDDEN AUDIO ELEMENTS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
-<!-- Discourse audio — plays .mp3 files -->
+══════════════════════════════════════════════════════ -->
 <audio id="main-audio"    preload="metadata" style="display:none;"></audio>
-<!-- Ambient audio — plays .mp3 OR .mp4 audio tracks (all modern browsers support this) -->
 <audio id="ambient-audio" preload="none" loop style="display:none;"></audio>
 
-<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     PDF READER MODAL  ← NEW ⑦
-     Opens PDFs in an embedded iframe.
-     Page number input lets users track and resume progress.
-     Progress saved to localStorage on modal close.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<!-- ══════════════════════════════════════════════════════
+     DRAGGABLE AMBIENT WIDGET
+══════════════════════════════════════════════════════ -->
+<div id="ambient-widget" role="region" aria-label="Ambient player">
+
+  <div class="aw-header">
+    <div class="aw-drag-dots">
+      <span></span><span></span><span></span>
+      <span></span><span></span><span></span>
+    </div>
+    <span class="aw-label">Ambient</span>
+    <button class="aw-close" id="aw-close" aria-label="Hide widget">✕</button>
+  </div>
+
+  <div class="aw-thumb" id="aw-thumb">
+    <div class="aw-thumb-empty">〰</div>
+  </div>
+
+  <div class="aw-info">
+    <div class="aw-title" id="aw-title">—</div>
+  </div>
+
+  <div class="aw-controls">
+    <button class="aw-play-btn" id="aw-play-btn" aria-label="Play or pause ambient">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
+    </button>
+    <input type="range" class="aw-volume" id="aw-volume" min="0" max="100" value="30" aria-label="Ambient volume">
+    <button class="aw-stop" id="aw-stop">■</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     PDF READER MODAL
+══════════════════════════════════════════════════════ -->
 <div id="pdf-modal" role="dialog" aria-modal="true" aria-label="PDF reader">
   <div class="pdf-modal-header">
     <div>
-      <div id="pdf-modal-title">Loading…</div>
+      <div id="pdf-modal-title">—</div>
       <div class="pdf-page-nav">
         <button id="pdf-prev-page" aria-label="Previous page">⟨</button>
         Page
-        <input id="pdf-page-num" type="number" min="1" value="1"
-               aria-label="Current page">
+        <input id="pdf-page-num" type="number" min="1" value="1" aria-label="Current page">
         of <span id="pdf-total-pages">?</span>
         <button id="pdf-next-page" aria-label="Next page">⟩</button>
       </div>
     </div>
     <div class="pdf-modal-actions">
-      <a id="pdf-dl-btn" href="#" download class="btn-glow"
-         style="font-size:.65rem;padding:6px 14px;">↓ Save</a>
-      <button id="pdf-close-btn" class="btn-glow"
-              style="font-size:.65rem;padding:6px 14px;">✕ Close</button>
+      <a id="pdf-dl-btn" href="#" download class="btn-glow" style="font-size:.63rem;padding:7px 14px;">↓ Save</a>
+      <button id="pdf-close-btn" class="btn-glow" style="font-size:.63rem;padding:7px 14px;">✕ Close</button>
     </div>
   </div>
   <iframe id="pdf-iframe" title="PDF Viewer" allow="fullscreen"></iframe>
 </div>
 
-<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<!-- ══════════════════════════════════════════════════════
      IMAGE LIGHTBOX
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+══════════════════════════════════════════════════════ -->
 <div id="lightbox" role="dialog" aria-modal="true" aria-label="Image viewer">
   <button id="lightbox-close" aria-label="Close">✕</button>
   <img id="lightbox-img" src="" alt="">
-  <div style="display:flex;align-items:center;gap:16px;margin-top:12px;">
+  <div style="display:flex;align-items:center;gap:14px;margin-top:12px;">
     <span id="lightbox-caption"></span>
-    <a id="lightbox-dl" href="#" download class="btn-glow"
-       style="font-size:.65rem;padding:6px 14px;">↓ Save</a>
+    <a id="lightbox-dl" href="#" download class="btn-glow" style="font-size:.63rem;padding:6px 13px;">↓ Save</a>
   </div>
 </div>
 
-<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     VIDEO MODAL
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<!-- ══════════════════════════════════════════════════════
+     VIDEO MODAL — #modal-video has aspect-ratio:16/9 in CSS
+══════════════════════════════════════════════════════ -->
 <div id="video-modal" role="dialog" aria-modal="true" aria-label="Video player">
   <div class="video-modal-inner">
     <button class="video-modal-close" aria-label="Close video">✕ Close</button>
@@ -572,9 +294,9 @@
   </div>
 </div>
 
-<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<!-- ══════════════════════════════════════════════════════
      TXT READER
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+══════════════════════════════════════════════════════ -->
 <div id="txt-reader" role="dialog" aria-modal="true" aria-label="Text reader">
   <div class="reader-header">
     <div class="reader-title-block">
@@ -582,8 +304,7 @@
       <div class="reader-doc-title" id="reader-doc-title">—</div>
     </div>
     <div class="reader-actions">
-      <button class="btn-glow" id="reader-close-top"
-              style="font-size:.65rem;padding:6px 14px;">✕ Close</button>
+      <button class="btn-glow" id="reader-close-top" style="font-size:.63rem;padding:6px 13px;">✕ Close</button>
     </div>
   </div>
   <div class="reader-content-wrap">
@@ -592,7 +313,38 @@
   <button id="reader-close" style="display:none;" aria-hidden="true"></button>
 </div>
 
-<!-- Toast notification -->
+<!-- ══════════════════════════════════════════════════════
+     ABOUT MODAL  ⑧
+══════════════════════════════════════════════════════ -->
+<div id="about-modal" role="dialog" aria-modal="true" aria-label="About ShunyaSpace">
+  <div class="about-inner">
+    <button class="about-close" id="about-close" aria-label="Close">✕</button>
+
+    <div class="about-glyph">शून्य</div>
+    <div class="about-name">ShunyaSpace</div>
+    <div class="about-divider"></div>
+
+    <div class="about-body">
+      <p>
+        शून्य (Shunya) means <em>zero</em>, <em>void</em>, <em>emptiness</em> —
+        not as absence, but as the boundless ground from which everything arises.
+      </p>
+      <p>
+        This is a space for listening, reading, looking, and being.
+        Not a content platform. Not an algorithm.
+        A digital sanctuary where you choose to arrive.
+      </p>
+      <p>
+        Inspired by the traditions of Vedanta, Taoism, Zen, and Sufism —
+        all of which point to the same wordless thing.
+      </p>
+    </div>
+
+    <div class="about-footer">A silence you can enter &nbsp;·&nbsp; शून्य</div>
+  </div>
+</div>
+
+<!-- Toast -->
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script src="script.js"></script>
