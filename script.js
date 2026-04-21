@@ -1,35 +1,36 @@
 /* ═══════════════════════════════════════════════════════════
-   ShunyaSpace — script.js  (v6)
+   ShunyaSpace — script.js  (v7)
 
-   NEW IN v6:
-   ① Playback speed panel (0.5x–2x, smooth slider + presets)
-   ② Audio plays once — no auto-next
-   ③ Mobile sidebar overlay: click outside → closes
-   ④ Quote fade-transition on click (full rotation)
-   ⑤ Content protection: right-click, drag, context menu disabled
-   ⑥ Hindi section names in FALLBACK_NAV + section headers
-   ⑦ Logo breathing animation (CSS-driven, no JS needed)
-   ⑧ Resume video currentTime (video save/restore)
+   NEW IN v7:
+   ① Loading toast with spinner + % for audio/ambient
+   ② PDF.js canvas-based reader (no iframe) with scroll progress
+   ③ Image lightbox prev/next navigation
+   ④ Video modal prev/next navigation
+   ⑤ Ambient widget — close hides UI only, does NOT stop audio
+   ⑥ Ambient widget — image show/blur/hide toggle
+   ⑦ Download overlay on ALL cards
+   ⑧ Random Wisdom on Home → stays home, opens modal
+   ⑨ Resume card thumbnails shown
+   ⑩ Mobile sidebar: overlay click closes it
+   ⑪ Section titles use English font (no Hindi on badges)
+   ⑫ Home quote fade with "Opening something magical…" flash
+   ⑬ Video saved progress tracking
 ═══════════════════════════════════════════════════════════ */
 
 'use strict';
 
-/* ═══════════════════════════════════════════════════════════
-   FALLBACK NAV — Hindi names ⑥
-═══════════════════════════════════════════════════════════ */
+/* ─── FALLBACK NAV ─────────────────────────────────────── */
 const FALLBACK_NAV = [
-  { id:'home',    label:'Pravaah',      icon:'◌',  hint:'प्रवाह · The flow' },
-  { id:'audios',  label:'श्रवण',        icon:'◑',  hint:'Shravan · What is heard' },
-  { id:'ambient', label:'अनुभूति',      icon:'〰', hint:'Anubhuti · Surrounding sound' },
-  { id:'videos',  label:'दृश्य',        icon:'▷',  hint:'Drishya · Moving light' },
-  { id:'echo',    label:'प्रतिध्वनि',   icon:'∿',  hint:'Pratidhwani · Words that remain' },
-  { id:'images',  label:'Drishya',      icon:'◎',  hint:'दृश्य · What is seen' },
-  { id:'books',   label:'ग्रंथ',        icon:'⊟',  hint:'Granth · Deeper waters' },
+  { id:'home',    label:'Pravaah',   icon:'◌',  hint:'The flow' },
+  { id:'audios',  label:'Shravan',   icon:'◑',  hint:'What is heard' },
+  { id:'ambient', label:'Anubhuti',  icon:'〰', hint:'Surrounding sound' },
+  { id:'videos',  label:'Videos',    icon:'▷',  hint:'Moving light' },
+  { id:'echo',    label:'Echo',      icon:'∿',  hint:'Words that remain' },
+  { id:'images',  label:'Drishya',   icon:'◎',  hint:'What is seen' },
+  { id:'books',   label:'Books',     icon:'⊟',  hint:'Deeper waters' },
 ];
 
-/* ═══════════════════════════════════════════════════════════
-   STATE
-═══════════════════════════════════════════════════════════ */
+/* ─── STATE ────────────────────────────────────────────── */
 const State = {
   data: {
     global:null, home:null,
@@ -40,127 +41,161 @@ const State = {
   isMobile: innerWidth < 900,
   rendered: new Set(),
 
-  audio: {
-    currentId:null, isPlaying:false,
-    list:[], currentIndex:-1,
-    volume:0.85, speed:1,
-  },
-  ambient: {
-    currentId:null, isPlaying:false,
-    volume:0.3,
-  },
-  pdf: { currentItem:null },
+  audio:   { currentId:null, isPlaying:false, list:[], currentIndex:-1, volume:0.85, speed:1 },
+  ambient: { currentId:null, isPlaying:false, volume:0.3 },
+  pdf:     { currentItem:null, doc:null },
 
-  // All quotes for rotation
-  quoteList: [],
+  // Lightbox image nav
+  lightboxImages: [],
+  lightboxIndex:  0,
+
+  // Video nav
+  videoList:  [],
+  videoIndex: -1,
+
+  // Quotes
+  quoteList:  [],
   quoteIndex: 0,
+
+  // Ambient widget image mode: 'show' | 'blur' | 'hide'
+  ambientImgMode: 'show',
 };
 
-/* ═══════════════════════════════════════════════════════════
-   DOM CACHE
-═══════════════════════════════════════════════════════════ */
+/* ─── DOM CACHE ────────────────────────────────────────── */
 const DOM = {};
 
 function cacheDom() {
-  DOM.app          = document.getElementById('app');
-  DOM.mainAudio    = document.getElementById('main-audio');
-  DOM.ambientAudio = document.getElementById('ambient-audio');
+  DOM.app            = document.getElementById('app');
+  DOM.mainAudio      = document.getElementById('main-audio');
+  DOM.ambientAudio   = document.getElementById('ambient-audio');
 
-  // Player bar
-  DOM.playerBar    = document.getElementById('bottom-player');
-  DOM.playerThumb  = document.getElementById('player-thumb');
-  DOM.playerTitle  = document.getElementById('player-title');
-  DOM.playerSub    = document.getElementById('player-speaker');
-  DOM.playPauseBtn = document.getElementById('btn-play-pause');
-  DOM.prevBtn      = document.getElementById('btn-prev');
-  DOM.nextBtn      = document.getElementById('btn-next');
-  DOM.skipBackBtn  = document.getElementById('btn-skip-back');
-  DOM.skipFwdBtn   = document.getElementById('btn-skip-fwd');
-  DOM.seekTrack    = document.querySelector('.seek-track');
-  DOM.seekFill     = document.querySelector('.seek-fill');
-  DOM.seekThumb    = document.querySelector('.seek-thumb');
-  DOM.timeElapsed  = document.getElementById('time-elapsed');
-  DOM.timeRemain   = document.getElementById('time-remain');
-  DOM.volSlider    = document.getElementById('player-volume');
-  DOM.dlBtn        = document.getElementById('player-download');
-  DOM.speedBtn     = document.getElementById('btn-speed');
-  DOM.speedPanel   = document.getElementById('speed-panel');
-  DOM.speedSlider  = document.getElementById('speed-slider');
-  DOM.speedCurrent = document.getElementById('speed-current');
+  DOM.playerBar      = document.getElementById('bottom-player');
+  DOM.playerThumb    = document.getElementById('player-thumb');
+  DOM.playerTitle    = document.getElementById('player-title');
+  DOM.playerSub      = document.getElementById('player-speaker');
+  DOM.playPauseBtn   = document.getElementById('btn-play-pause');
+  DOM.prevBtn        = document.getElementById('btn-prev');
+  DOM.nextBtn        = document.getElementById('btn-next');
+  DOM.skipBackBtn    = document.getElementById('btn-skip-back');
+  DOM.skipFwdBtn     = document.getElementById('btn-skip-fwd');
+  DOM.seekTrack      = document.querySelector('.seek-track');
+  DOM.seekFill       = document.querySelector('.seek-fill');
+  DOM.seekThumb      = document.querySelector('.seek-thumb');
+  DOM.timeElapsed    = document.getElementById('time-elapsed');
+  DOM.timeRemain     = document.getElementById('time-remain');
+  DOM.volSlider      = document.getElementById('player-volume');
+  DOM.dlBtn          = document.getElementById('player-download');
+  DOM.speedBtn       = document.getElementById('btn-speed');
+  DOM.speedPanel     = document.getElementById('speed-panel');
+  DOM.speedSlider    = document.getElementById('speed-slider');
+  DOM.speedCurrent   = document.getElementById('speed-current');
 
-  // Ambient widget
-  DOM.ambWidget    = document.getElementById('ambient-widget');
-  DOM.awTitle      = document.getElementById('aw-title');
-  DOM.awThumb      = document.getElementById('aw-thumb');
-  DOM.awPlayBtn    = document.getElementById('aw-play-btn');
-  DOM.awVolume     = document.getElementById('aw-volume');
+  DOM.ambWidget      = document.getElementById('ambient-widget');
+  DOM.awTitle        = document.getElementById('aw-title');
+  DOM.awImageWrap    = document.getElementById('aw-image-wrap');
+  DOM.awPlayBtn      = document.getElementById('aw-play-btn');
+  DOM.awVolume       = document.getElementById('aw-volume');
+  DOM.awPrevBtn      = document.getElementById('aw-prev');
+  DOM.awNextBtn      = document.getElementById('aw-next');
 
-  // Modals & overlays
-  DOM.toast        = document.getElementById('toast');
-  DOM.lightbox     = document.getElementById('lightbox');
-  DOM.lightboxImg  = document.getElementById('lightbox-img');
-  DOM.lightboxCap  = document.getElementById('lightbox-caption');
-  DOM.lightboxDl   = document.getElementById('lightbox-dl');
-  DOM.videoModal   = document.getElementById('video-modal');
-  DOM.modalVideo   = document.getElementById('modal-video');
-  DOM.txtReader    = document.getElementById('txt-reader');
-  DOM.readerContent= document.getElementById('reader-content');
-  DOM.sidebar      = document.getElementById('sidebar');
+  DOM.loadingToast   = document.getElementById('loading-toast');
+  DOM.ltPct          = document.getElementById('lt-pct');
+  DOM.toast          = document.getElementById('toast');
+
+  DOM.lightbox       = document.getElementById('lightbox');
+  DOM.lightboxImg    = document.getElementById('lightbox-img');
+  DOM.lightboxCap    = document.getElementById('lightbox-caption');
+  DOM.lightboxDl     = document.getElementById('lightbox-dl');
+  DOM.lbPrev         = document.getElementById('lb-prev');
+  DOM.lbNext         = document.getElementById('lb-next');
+  DOM.lbCounter      = document.getElementById('lb-counter');
+
+  DOM.videoModal     = document.getElementById('video-modal');
+  DOM.modalVideo     = document.getElementById('modal-video');
+  DOM.vidPrev        = document.getElementById('vid-prev');
+  DOM.vidNext        = document.getElementById('vid-next');
+
+  DOM.txtReader      = document.getElementById('txt-reader');
+  DOM.readerContent  = document.getElementById('reader-content');
+  DOM.readerPFill    = document.querySelector('.reader-progress-fill');
+  DOM.sidebar        = document.getElementById('sidebar');
   DOM.sidebarOverlay = document.getElementById('sidebar-overlay');
-  DOM.pdfModal     = document.getElementById('pdf-modal');
-  DOM.pdfIframe    = document.getElementById('pdf-iframe');
-  DOM.aboutModal   = document.getElementById('about-modal');
+
+  DOM.pdfModal       = document.getElementById('pdf-modal');
+  DOM.pdfContainer   = document.getElementById('pdf-container');
+  DOM.pdfLoader      = document.querySelector('.pdf-loader');
+  DOM.pdfProgressFill = document.querySelector('.pdf-progress-fill');
+
+  DOM.aboutModal     = document.getElementById('about-modal');
 }
 
-/* ═══════════════════════════════════════════════════════════
-   LOCAL STORAGE
-═══════════════════════════════════════════════════════════ */
+/* ─── LOCAL STORAGE ────────────────────────────────────── */
 const Store = {
   get:  k    => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
-  set:  (k,v)=> { try { localStorage.setItem(k,JSON.stringify(v)); } catch {} },
+  set:  (k,v)=> { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
 
-  saveAudioTime:   (id,t)  => Store.set(`audio_${id}`,t),
-  getAudioTime:    id      => Store.get(`audio_${id}`) || 0,
-  saveAudioDur:    (id,d)  => Store.set(`audiodur_${id}`,d),
-  getAudioDur:     id      => Store.get(`audiodur_${id}`) || 0,
+  saveAudioTime:  (id,t) => Store.set(`audio_${id}`,t),
+  getAudioTime:   id     => Store.get(`audio_${id}`) || 0,
+  saveAudioDur:   (id,d) => Store.set(`audiodur_${id}`,d),
+  getAudioDur:    id     => Store.get(`audiodur_${id}`) || 0,
 
-  saveTxtScroll:   (id,p)  => Store.set(`txt_${id}`,p),
-  getTxtScroll:    id      => Store.get(`txt_${id}`) || 0,
-  saveTxtHeight:   (id,h)  => Store.set(`txth_${id}`,h),
-  getTxtHeight:    id      => Store.get(`txth_${id}`) || 1,
+  saveTxtScroll:  (id,p) => Store.set(`txt_${id}`,p),
+  getTxtScroll:   id     => Store.get(`txt_${id}`) || 0,
+  saveTxtHeight:  (id,h) => Store.set(`txth_${id}`,h),
+  getTxtHeight:   id     => Store.get(`txth_${id}`) || 1,
 
-  savePdfPage:     (id,p)  => Store.set(`pdf_progress_${id}`,p),
-  getPdfPage:      id      => Store.get(`pdf_progress_${id}`) || 1,
+  savePdfScroll:  (id,s) => Store.set(`pdf_scroll_${id}`,s),
+  getPdfScroll:   id     => Store.get(`pdf_scroll_${id}`) || 0,
+  savePdfHeight:  (id,h) => Store.set(`pdfh_${id}`,h),
+  getPdfHeight:   id     => Store.get(`pdfh_${id}`) || 1,
 
-  saveVideoTime:   (id,t)  => Store.set(`video_${id}`,t),
-  getVideoTime:    id      => Store.get(`video_${id}`) || 0,
-  saveVideoDur:    (id,d)  => Store.set(`videodur_${id}`,d),
-  getVideoDur:     id      => Store.get(`videodur_${id}`) || 0,
+  saveVideoTime:  (id,t) => Store.set(`video_${id}`,t),
+  getVideoTime:   id     => Store.get(`video_${id}`) || 0,
+  saveVideoDur:   (id,d) => Store.set(`videodur_${id}`,d),
+  getVideoDur:    id     => Store.get(`videodur_${id}`) || 0,
 
-  saveLastAudio:   id      => Store.set('last_audio',id),
-  getLastAudio:    ()      => Store.get('last_audio'),
-  saveLastEcho:    id      => Store.set('last_echo',id),
-  getLastEcho:     ()      => Store.get('last_echo'),
-  getRecentImages: ()      => Store.get('images_recent') || [],
-  addRecentImage:  id => {
+  saveLastAudio:  id     => Store.set('last_audio', id),
+  getLastAudio:   ()     => Store.get('last_audio'),
+  saveLastEcho:   id     => Store.set('last_echo', id),
+  getLastEcho:    ()     => Store.get('last_echo'),
+  getRecentImages:()     => Store.get('images_recent') || [],
+  addRecentImage: id => {
     let r = Store.getRecentImages();
     r = [id,...r.filter(x=>x!==id)].slice(0,5);
-    Store.set('images_recent',r);
+    Store.set('images_recent', r);
   },
 };
 
-/* ═══════════════════════════════════════════════════════════
-   URL BUILDER
-═══════════════════════════════════════════════════════════ */
+/* ─── URL BUILDER ──────────────────────────────────────── */
 function buildUrl(base, filePath) {
   if (!filePath) return '';
   return base + filePath.split('/').map(s => encodeURIComponent(s)).join('/');
 }
 
-/* ═══════════════════════════════════════════════════════════
-   JSON LOADING
-═══════════════════════════════════════════════════════════ */
-async function fetchJSON(path, silent=false) {
+/* ─── LOADING TOAST ① ─────────────────────────────────── */
+let _loadingTimeout = null;
+
+function showLoadingToast(msg = 'Loading…') {
+  if (!DOM.loadingToast) return;
+  DOM.loadingToast.querySelector('.lt-text').childNodes[0].textContent = msg + ' ';
+  if (DOM.ltPct) DOM.ltPct.textContent = '';
+  DOM.loadingToast.classList.add('show');
+  // Safety: always hide after 15s even if load hangs
+  clearTimeout(_loadingTimeout);
+  _loadingTimeout = setTimeout(hideLoadingToast, 15000);
+}
+
+function updateLoadingPct(pct) {
+  if (DOM.ltPct) DOM.ltPct.textContent = pct + '%';
+}
+
+function hideLoadingToast() {
+  clearTimeout(_loadingTimeout);
+  DOM.loadingToast?.classList.remove('show');
+}
+
+/* ─── JSON LOADING ─────────────────────────────────────── */
+async function fetchJSON(path, silent = false) {
   try {
     const r = await fetch(path);
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -201,9 +236,7 @@ function parseImages(raw) {
   const b = (raw.base_url||'').replace(/\/$/,'')+'/';
   const sb = b==='/' ? '' : b;
   return raw.items.map(item => ({
-    ...item,
-    url:          buildUrl(sb, item.file),
-    thumbnailUrl: buildUrl(sb, item.file),
+    ...item, url: buildUrl(sb, item.file), thumbnailUrl: buildUrl(sb, item.file),
   }));
 }
 
@@ -227,22 +260,22 @@ async function loadAllData() {
   State.data.echo    = parseEcho(eR);
   State.data.images  = parseImages(iR);
   State.audio.list   = State.data.audios;
+  State.videoList    = State.data.videos;
 
-  // Store all quotes for rotation
-  const quotes = State.data.home?.quotes || [];
-  State.quoteList = quotes.length ? quotes : [
-    {text:'The quieter you become, the more you can hear.', author:'Ram Dass'},
-    {text:'Emptiness is not a void. It is the ground of being.', author:'Krishnamurti'},
-    {text:'You are not a drop in the ocean. You are the entire ocean in a drop.', author:'Rumi'},
-    {text:'What you are looking for is what is looking.', author:'Francis of Assisi'},
-    {text:'Silence is not the absence of sound but the presence of everything.', author:'Unknown'},
-  ];
+  State.quoteList = State.data.home?.quotes?.length
+    ? State.data.home.quotes
+    : [
+      {text:'The quieter you become, the more you can hear.', author:'Ram Dass'},
+      {text:'Emptiness is not a void. It is the ground of being.', author:'Krishnamurti'},
+      {text:'You are not a drop in the ocean. You are the entire ocean in a drop.', author:'Rumi'},
+      {text:'What you are looking for is what is looking.', author:'Francis of Assisi'},
+      {text:'Silence is not the absence of sound but the presence of everything.', author:'Unknown'},
+      {text:'The present moment is the only moment available to us.', author:'Thich Nhat Hanh'},
+    ];
   State.quoteIndex = Math.floor(Math.random() * State.quoteList.length);
 }
 
-/* ═══════════════════════════════════════════════════════════
-   NAVIGATION
-═══════════════════════════════════════════════════════════ */
+/* ─── NAVIGATION ───────────────────────────────────────── */
 function initNav() {
   const items = State.data.global?.nav || FALLBACK_NAV;
   const list  = document.getElementById('nav-list');
@@ -287,21 +320,21 @@ function renderSection(id) {
   })[id]?.();
 }
 
-/* ═══════════════════════════════════════════════════════════
-   CARD BUILDER
-═══════════════════════════════════════════════════════════ */
+/* ─── CARD BUILDER (with download overlay ⑦) ─────────── */
 function buildCard(item, {badge='',delay=0,extraClass=''} = {}) {
   const progress = getItemProgress(item);
   const thumb = item.thumbnailUrl
     ? `<img data-src="${item.thumbnailUrl}" alt="" loading="lazy">`
     : `<div class="card-thumb-placeholder">${badge||'◌'}</div>`;
-  const progressBar = progress > 0 ? `
-    <div class="card-progress-bar">
-      <div class="card-progress-fill" style="width:${progress}%"></div>
-    </div>` : '';
+  const progressBar = progress > 0
+    ? `<div class="card-progress-bar"><div class="card-progress-fill" style="width:${progress}%"></div></div>`
+    : '';
+  const dlOverlay = item.url
+    ? `<a href="${item.url}" download="${item.file||''}" class="card-dl-overlay" title="Download" onclick="event.stopPropagation()">↓</a>`
+    : '';
   return `
     <div class="content-card animate-in ${extraClass}" data-id="${item.id}" style="animation-delay:${delay}s">
-      <div class="card-thumb">${thumb}${progressBar}</div>
+      <div class="card-thumb">${thumb}${progressBar}${dlOverlay}</div>
       <div class="card-info">
         ${badge ? `<span class="card-badge">${badge}</span>` : ''}
         <div class="card-title">${item.title||item.file||'—'}</div>
@@ -315,7 +348,7 @@ function getItemProgress(item) {
     const t = Store.getAudioTime(item.id), d = Store.getAudioDur(item.id);
     return d > 0 ? Math.round((t/d)*100) : 0;
   }
-  if (item.type === 'txt') {
+  if (item.type==='txt') {
     const s = Store.getTxtScroll(item.id), h = Store.getTxtHeight(item.id);
     return h > 0 ? Math.min(100, Math.round((s/h)*100)) : 0;
   }
@@ -334,7 +367,7 @@ function lazyLoad(container) {
       el.src    = el.dataset.src;
       el.onload  = () => el.classList.add('loaded');
       el.onerror = () => {
-        const w = el.closest('.card-thumb,.ambient-thumb,.aw-thumb');
+        const w = el.closest('.card-thumb,.ambient-thumb,.aw-image-wrap,.resume-card-thumb');
         if (w) w.innerHTML = '<div class="card-thumb-placeholder">◌</div>';
       };
       io.disconnect();
@@ -343,30 +376,29 @@ function lazyLoad(container) {
   });
 }
 
-/* ═══════════════════════════════════════════════════════════
-   HOME — quote rotation on click ④
-═══════════════════════════════════════════════════════════ */
+/* ─── HOME ⑧ (Random Wisdom stays, quote ⑫) ─────────── */
 function renderHome() {
   const C = document.getElementById('home-inner');
   const {home, global} = State.data;
-  const q = State.quoteList[State.quoteIndex] || {
-    text:'The quieter you become, the more you can hear.', author:'Ram Dass',
-  };
+  const q = State.quoteList[State.quoteIndex] || State.quoteList[0];
 
   const lastAudio = State.data.audios.find(a => a.id===Store.getLastAudio());
   const lastEcho  = State.data.echo.all.find(e => e.id===Store.getLastEcho());
   const lastImg   = State.data.images.find(i => i.id===Store.getRecentImages()[0]);
 
-  function progressCard(item, action, type) {
+  function progressCard(item, action, label) {
     const pct = getItemProgress(item);
     return `
       <div class="resume-card animate-in" data-action="${action}" data-id="${item.id}">
-        <div class="resume-card-type">${type}</div>
+        ${item.thumbnailUrl
+          ? `<div class="resume-card-thumb"><img data-src="${item.thumbnailUrl}" alt=""></div>`
+          : ''}
+        <div class="resume-card-type">${label}</div>
         <div class="resume-card-title">${item.title||item.file||'—'}</div>
         <div class="resume-progress-wrap">
           <div class="resume-progress-fill" style="width:${pct}%"></div>
         </div>
-        <div class="resume-progress-label">${pct > 0 ? pct+'% complete' : 'Start'}</div>
+        <div class="resume-progress-label">${pct>0 ? pct+'% complete' : 'Start'}</div>
       </div>`;
   }
 
@@ -374,6 +406,7 @@ function renderHome() {
     lastAudio ? progressCard(lastAudio,'resume-audio','↺ Continue Listening') : '',
     lastEcho  ? progressCard(lastEcho, 'resume-echo', '↺ Continue Reading')   : '',
     lastImg   ? `<div class="resume-card animate-in" data-action="resume-image" data-id="${lastImg.id}">
+      ${lastImg.url ? `<div class="resume-card-thumb"><img data-src="${lastImg.url}" alt=""></div>` : ''}
       <div class="resume-card-type">◎ Recently Viewed</div>
       <div class="resume-card-title">${lastImg.file||'An image'}</div>
     </div>` : '',
@@ -381,14 +414,15 @@ function renderHome() {
 
   C.innerHTML = `
     <div class="home-hero">
-      <div class="home-shunya-glyph" id="shunya-glyph" title="About ShunyaSpace" role="button">शून्य</div>
-      <div class="home-welcome">${home?.welcome||'You have arrived.'}</div>
+      <div class="home-shunya-glyph" id="shunya-glyph" role="button" title="About ShunyaSpace">शून्य</div>
+      <div class="home-welcome">${home?.welcome||'You have arrived. There is nowhere else to be.'}</div>
       <div class="home-tagline">${global?.site?.tagline||'A silence you can enter'}</div>
     </div>
 
-    <div class="home-quote-block animate-in" id="quote-block" title="Tap to change" role="button" tabindex="0">
+    <div class="home-quote-block animate-in" id="quote-block" role="button" tabindex="0" title="Tap to change">
       <div class="quote-text" id="quote-text">${q.text}</div>
       <div class="quote-author" id="quote-author">— ${q.author}</div>
+      <div class="quote-magic-msg" id="quote-magic">Opening something magical…</div>
     </div>
 
     ${cards ? `<div class="home-resume">
@@ -397,12 +431,17 @@ function renderHome() {
     </div>` : ''}
   `;
 
-  // Quote rotation — fade transition ④
-  const qBlock = document.getElementById('quote-block');
-  const qText  = document.getElementById('quote-text');
-  const qAuth  = document.getElementById('quote-author');
+  // Lazy load resume thumbnails
+  lazyLoad(C);
+
+  // Quote rotation with fade + magic message ⑫
+  const qBlock  = document.getElementById('quote-block');
+  const qText   = document.getElementById('quote-text');
+  const qAuth   = document.getElementById('quote-author');
+  const qMagic  = document.getElementById('quote-magic');
 
   qBlock?.addEventListener('click', () => {
+    qMagic.classList.add('show');
     qText.classList.add('fading');
     setTimeout(() => {
       State.quoteIndex = (State.quoteIndex + 1) % State.quoteList.length;
@@ -410,28 +449,34 @@ function renderHome() {
       qText.textContent = next.text;
       qAuth.textContent = '— ' + next.author;
       qText.classList.remove('fading');
+      setTimeout(() => qMagic.classList.remove('show'), 1200);
     }, 480);
   });
 
-  // शून्य glyph also opens about modal
+  // Shunya glyph → about modal
   document.getElementById('shunya-glyph')?.addEventListener('click', () => {
     DOM.aboutModal?.classList.add('open');
   });
 
-  // Resume cards
+  // Resume cards navigation
   C.querySelectorAll('[data-action]').forEach(card => {
     card.addEventListener('click', () => {
-      const {action,id} = card.dataset;
-      if (action==='resume-audio') { navigateTo('audios'); setTimeout(()=>playAudioById(id),300); }
-      if (action==='resume-echo')  { navigateTo('echo');   setTimeout(()=>openEchoById(id),300); }
-      if (action==='resume-image') { navigateTo('images'); setTimeout(()=>openImageById(id),400); }
+      const {action, id} = card.dataset;
+      if (action==='resume-audio') {
+        // ⑧ Stay on home, just start playing
+        playAudioById(id);
+      } else if (action==='resume-echo') {
+        navigateTo('echo');
+        setTimeout(() => openEchoById(id), 300);
+      } else if (action==='resume-image') {
+        // Open lightbox without leaving home
+        openImageById(id, true);
+      }
     });
   });
 }
 
-/* ═══════════════════════════════════════════════════════════
-   AUDIOS
-═══════════════════════════════════════════════════════════ */
+/* ─── AUDIOS ───────────────────────────────────────────── */
 function renderAudios() {
   const C = document.getElementById('audios-list');
   const audios = State.data.audios;
@@ -445,9 +490,7 @@ function renderAudios() {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════
-   AUDIO ENGINE — ② plays once, no auto-next
-═══════════════════════════════════════════════════════════ */
+/* ─── AUDIO ENGINE ① loading toast ────────────────────── */
 function playAudioById(id) {
   const item = State.data.audios.find(a => a.id===id);
   if (!item) return;
@@ -472,9 +515,21 @@ function playAudioById(id) {
     }, {once:true});
   }
 
+  showLoadingToast('Loading audio…');
+
   DOM.mainAudio.play()
-    .then(() => { State.audio.isPlaying=true; showPlayerBar(item); refreshAudioUI(); })
-    .catch(e => { console.warn('[Shunya] Audio fail:',item.url,e.message); showToast('Could not load audio. Check the URL.'); showPlayerBar(item); });
+    .then(() => {
+      hideLoadingToast();
+      State.audio.isPlaying = true;
+      showPlayerBar(item);
+      refreshAudioUI();
+    })
+    .catch(e => {
+      hideLoadingToast();
+      console.warn('[Shunya] Audio fail:', item.url, e.message);
+      showToast('Could not load audio. Check the URL.');
+      showPlayerBar(item);
+    });
 }
 
 function toggleAudioPlayback() {
@@ -504,117 +559,59 @@ function updatePlayIcon() {
 }
 
 function bindAudioEvents() {
+  DOM.mainAudio.addEventListener('progress', () => {
+    if (DOM.mainAudio.buffered.length > 0 && DOM.mainAudio.duration) {
+      const pct = Math.round((DOM.mainAudio.buffered.end(DOM.mainAudio.buffered.length-1) / DOM.mainAudio.duration) * 100);
+      updateLoadingPct(pct);
+    }
+  });
+  DOM.mainAudio.addEventListener('canplay', () => hideLoadingToast());
   DOM.mainAudio.addEventListener('timeupdate', () => {
     if (State.audio.currentId) Store.saveAudioTime(State.audio.currentId, DOM.mainAudio.currentTime);
     if (DOM.mainAudio.duration) Store.saveAudioDur(State.audio.currentId, DOM.mainAudio.duration);
     updateSeek(DOM.mainAudio.currentTime, DOM.mainAudio.duration);
   });
-  // ② No auto-next — audio stops when done
   DOM.mainAudio.addEventListener('ended', () => {
-    State.audio.isPlaying = false;
-    refreshAudioUI();
-    // Reset saved time so it starts fresh next time
+    State.audio.isPlaying = false; refreshAudioUI();
     if (State.audio.currentId) Store.saveAudioTime(State.audio.currentId, 0);
   });
   DOM.mainAudio.addEventListener('play',  () => { State.audio.isPlaying=true;  refreshAudioUI(); });
   DOM.mainAudio.addEventListener('pause', () => { State.audio.isPlaying=false; refreshAudioUI(); });
-  DOM.mainAudio.addEventListener('error', () => showToast('Audio error. Check the URL.'));
+  DOM.mainAudio.addEventListener('error', () => { hideLoadingToast(); showToast('Audio error.'); });
+  DOM.mainAudio.addEventListener('waiting', () => showLoadingToast('Buffering…'));
 }
 
 function updateSeek(current, duration) {
   if (!duration || isNaN(duration)) return;
   const pct = (current/duration)*100;
-  if (DOM.seekFill)    DOM.seekFill.style.width = pct+'%';
-  if (DOM.seekThumb)   DOM.seekThumb.style.left = pct+'%';
+  if (DOM.seekFill)    DOM.seekFill.style.width   = pct+'%';
+  if (DOM.seekThumb)   DOM.seekThumb.style.left   = pct+'%';
   if (DOM.timeElapsed) DOM.timeElapsed.textContent = fmt(current);
   if (DOM.timeRemain)  DOM.timeRemain.textContent  = '-'+fmt(duration-current);
 }
-
 function fmt(s) {
   if (!s||isNaN(s)) return '0:00';
   return `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   PLAYER BAR + SPEED PANEL ①
-═══════════════════════════════════════════════════════════ */
+/* ─── PLAYER BAR ────────────────────────────────────────── */
 function showPlayerBar(item) {
   DOM.playerBar.classList.add('visible');
-  DOM.playerTitle.textContent          = item.title||item.file||'—';
-  DOM.playerSub.textContent            = item.speaker||item.author||'';
-  DOM.playerThumb.src                  = item.thumbnailUrl||'';
-  DOM.playerThumb.style.display        = item.thumbnailUrl ? 'block' : 'none';
-  DOM.dlBtn.href                       = item.url||'#';
-  DOM.dlBtn.setAttribute('download',   item.file||'');
-  // Reflect current speed in button
+  DOM.playerTitle.textContent   = item.title||item.file||'—';
+  DOM.playerSub.textContent     = item.speaker||item.author||'';
+  DOM.playerThumb.src           = item.thumbnailUrl||'';
+  DOM.playerThumb.style.display = item.thumbnailUrl ? 'block' : 'none';
+  DOM.dlBtn.href                = item.url||'#';
+  DOM.dlBtn.setAttribute('download', item.file||'');
   if (DOM.speedBtn) DOM.speedBtn.textContent = State.audio.speed+'×';
-}
-
-function setSpeed(rate) {
-  State.audio.speed = rate;
-  DOM.mainAudio.playbackRate = rate;
-  if (DOM.speedBtn)     DOM.speedBtn.textContent = rate+'×';
-  if (DOM.speedCurrent) DOM.speedCurrent.textContent = rate+'×';
-  if (DOM.speedSlider)  DOM.speedSlider.value = rate;
-  // Update selected preset buttons
-  document.querySelectorAll('.speed-preset').forEach(b =>
-    b.classList.toggle('selected', parseFloat(b.dataset.rate) === rate)
-  );
-}
-
-function initSpeedPanel() {
-  if (!DOM.speedBtn) return;
-
-  // Toggle panel open/close
-  DOM.speedBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    DOM.speedPanel?.classList.toggle('open');
-    DOM.speedBtn.classList.toggle('active', DOM.speedPanel?.classList.contains('open'));
-  });
-
-  // Close when clicking outside
-  document.addEventListener('click', (e) => {
-    if (!DOM.speedPanel?.contains(e.target) && e.target !== DOM.speedBtn) {
-      DOM.speedPanel?.classList.remove('open');
-      DOM.speedBtn?.classList.remove('active');
-    }
-  });
-
-  // Slider input
-  DOM.speedSlider?.addEventListener('input', () => {
-    const rate = parseFloat(parseFloat(DOM.speedSlider.value).toFixed(2));
-    setSpeed(rate);
-  });
-
-  // Preset buttons
-  document.querySelectorAll('.speed-preset').forEach(btn => {
-    btn.addEventListener('click', () => {
-      setSpeed(parseFloat(btn.dataset.rate));
-    });
-  });
-
-  // Init UI to current speed
-  setSpeed(State.audio.speed);
 }
 
 function initPlayerBar() {
   DOM.playPauseBtn?.addEventListener('click', () => { if (DOM.mainAudio.src) toggleAudioPlayback(); });
-
-  DOM.prevBtn?.addEventListener('click', () => {
-    const i = State.audio.currentIndex;
-    if (i > 0) playAudioById(State.audio.list[i-1].id);
-  });
-  DOM.nextBtn?.addEventListener('click', () => {
-    const i = State.audio.currentIndex;
-    if (i < State.audio.list.length-1) playAudioById(State.audio.list[i+1].id);
-  });
-
-  DOM.skipBackBtn?.addEventListener('click', () => {
-    if (DOM.mainAudio.src) DOM.mainAudio.currentTime = Math.max(0, DOM.mainAudio.currentTime-10);
-  });
-  DOM.skipFwdBtn?.addEventListener('click', () => {
-    if (DOM.mainAudio.src) DOM.mainAudio.currentTime = Math.min(DOM.mainAudio.duration||0, DOM.mainAudio.currentTime+10);
-  });
+  DOM.prevBtn?.addEventListener('click', () => { const i=State.audio.currentIndex; if(i>0) playAudioById(State.audio.list[i-1].id); });
+  DOM.nextBtn?.addEventListener('click', () => { const i=State.audio.currentIndex; if(i<State.audio.list.length-1) playAudioById(State.audio.list[i+1].id); });
+  DOM.skipBackBtn?.addEventListener('click', () => { if(DOM.mainAudio.src) DOM.mainAudio.currentTime = Math.max(0, DOM.mainAudio.currentTime-10); });
+  DOM.skipFwdBtn?.addEventListener('click',  () => { if(DOM.mainAudio.src) DOM.mainAudio.currentTime = Math.min(DOM.mainAudio.duration||0, DOM.mainAudio.currentTime+10); });
 
   DOM.seekTrack?.addEventListener('click', e => {
     if (!DOM.mainAudio.duration) return;
@@ -629,7 +626,6 @@ function initPlayerBar() {
   if (DOM.volSlider) DOM.volSlider.value = State.audio.volume*100;
   DOM.mainAudio.volume = State.audio.volume;
 
-  // Mute toggle
   let muteVol = State.audio.volume;
   document.getElementById('btn-vol-mute')?.addEventListener('click', () => {
     if (DOM.mainAudio.volume > 0) {
@@ -639,55 +635,86 @@ function initPlayerBar() {
     } else {
       DOM.mainAudio.volume = muteVol;
       State.audio.volume = muteVol;
-      if (DOM.volSlider) DOM.volSlider.value = muteVol * 100;
+      if (DOM.volSlider) DOM.volSlider.value = muteVol*100;
     }
   });
 
-  // Keyboard shortcuts
   document.addEventListener('keydown', e => {
     const tag = document.activeElement?.tagName;
     if (['INPUT','TEXTAREA'].includes(tag)) return;
-    if (e.code==='Space')      { e.preventDefault(); if (DOM.mainAudio.src) toggleAudioPlayback(); }
-    if (e.key==='ArrowRight')  { e.preventDefault(); if (DOM.mainAudio.src) DOM.mainAudio.currentTime = Math.min(DOM.mainAudio.duration||0, DOM.mainAudio.currentTime+10); }
-    if (e.key==='ArrowLeft')   { e.preventDefault(); if (DOM.mainAudio.src) DOM.mainAudio.currentTime = Math.max(0, DOM.mainAudio.currentTime-10); }
+    if (e.code==='Space')   { e.preventDefault(); if(DOM.mainAudio.src) toggleAudioPlayback(); }
+    if (e.key==='ArrowRight'&&DOM.mainAudio.src) { e.preventDefault(); DOM.mainAudio.currentTime = Math.min(DOM.mainAudio.duration||0, DOM.mainAudio.currentTime+10); }
+    if (e.key==='ArrowLeft' &&DOM.mainAudio.src) { e.preventDefault(); DOM.mainAudio.currentTime = Math.max(0, DOM.mainAudio.currentTime-10); }
   });
 
   updatePlayIcon();
   initSpeedPanel();
 }
 
-/* ═══════════════════════════════════════════════════════════
-   VIDEOS — save/restore currentTime ⑧
-═══════════════════════════════════════════════════════════ */
+function setSpeed(rate) {
+  State.audio.speed = rate;
+  DOM.mainAudio.playbackRate = rate;
+  if (DOM.speedBtn)     DOM.speedBtn.textContent     = rate+'×';
+  if (DOM.speedCurrent) DOM.speedCurrent.textContent = rate+'×';
+  if (DOM.speedSlider)  DOM.speedSlider.value        = rate;
+  document.querySelectorAll('.speed-preset').forEach(b =>
+    b.classList.toggle('selected', parseFloat(b.dataset.rate)===rate)
+  );
+}
+
+function initSpeedPanel() {
+  DOM.speedBtn?.addEventListener('click', e => {
+    e.stopPropagation();
+    DOM.speedPanel?.classList.toggle('open');
+    DOM.speedBtn.classList.toggle('active', DOM.speedPanel?.classList.contains('open'));
+  });
+  document.addEventListener('click', e => {
+    if (!DOM.speedPanel?.contains(e.target) && e.target!==DOM.speedBtn) {
+      DOM.speedPanel?.classList.remove('open');
+      DOM.speedBtn?.classList.remove('active');
+    }
+  });
+  DOM.speedSlider?.addEventListener('input', () => {
+    setSpeed(parseFloat(parseFloat(DOM.speedSlider.value).toFixed(2)));
+  });
+  document.querySelectorAll('.speed-preset').forEach(btn =>
+    btn.addEventListener('click', () => setSpeed(parseFloat(btn.dataset.rate)))
+  );
+  setSpeed(1);
+}
+
+/* ─── VIDEOS ④ nav ─────────────────────────────────────── */
 function renderVideos() {
   const C = document.getElementById('videos-grid');
   const videos = State.data.videos;
   if (!videos.length) { C.innerHTML = emptyState('▷','No videos. Add files to <code>shunya_data/videos/</code> and run <code>generate_json.py</code>'); return; }
   C.innerHTML = `<div class="content-grid">${
-    videos.map((v,i) => buildCard(v,{badge:'दृश्य',delay:i*.06})).join('')
+    videos.map((v,i) => buildCard(v,{badge:'Video',delay:i*.06})).join('')
   }</div>`;
   lazyLoad(C);
   C.querySelectorAll('.content-card').forEach(card => {
     card.addEventListener('click', () => {
-      const item = State.data.videos.find(v=>v.id===card.dataset.id);
-      if (item) openVideoModal(item);
+      const idx = State.data.videos.findIndex(v=>v.id===card.dataset.id);
+      if (idx >= 0) openVideoModal(idx);
     });
   });
 }
 
-function openVideoModal(item) {
+function openVideoModal(idx) {
+  const item = State.data.videos[idx];
+  if (!item) return;
+  State.videoIndex = idx;
   DOM.modalVideo.src = item.url;
   DOM.videoModal.classList.add('open');
 
-  // Restore saved position
-  const savedTime = Store.getVideoTime(item.id);
-  if (savedTime > 0) {
+  const saved = Store.getVideoTime(item.id);
+  if (saved > 0) {
     DOM.modalVideo.addEventListener('loadedmetadata', () => {
-      DOM.modalVideo.currentTime = savedTime;
+      DOM.modalVideo.currentTime = saved;
     }, {once:true});
   }
 
-  // Save progress during playback
+  DOM.modalVideo._item = item;
   DOM.modalVideo._saveInterval = setInterval(() => {
     if (DOM.modalVideo.currentTime > 0) {
       Store.saveVideoTime(item.id, DOM.modalVideo.currentTime);
@@ -695,10 +722,18 @@ function openVideoModal(item) {
     }
   }, 2000);
 
-  DOM.modalVideo.play().catch(e => {
-    console.warn('[Shunya] Video fail:',item.url,e.message);
-    showToast('Could not load video. Check the URL.');
-  });
+  // Update nav buttons
+  if (DOM.vidPrev) DOM.vidPrev.disabled = idx <= 0;
+  if (DOM.vidNext) DOM.vidNext.disabled = idx >= State.data.videos.length-1;
+
+  showLoadingToast('Loading video…');
+  DOM.modalVideo.play()
+    .then(() => hideLoadingToast())
+    .catch(e => {
+      hideLoadingToast();
+      console.warn('[Shunya] Video fail:', item.url, e.message);
+      showToast('Could not load video.');
+    });
 }
 
 function closeVideoModal() {
@@ -706,16 +741,23 @@ function closeVideoModal() {
   DOM.videoModal.classList.remove('open');
   DOM.modalVideo.pause();
   DOM.modalVideo.removeAttribute('src');
+  hideLoadingToast();
 }
 
 function initVideoModal() {
   document.querySelector('.video-modal-close')?.addEventListener('click', closeVideoModal);
   DOM.videoModal?.addEventListener('click', e => { if(e.target===DOM.videoModal) closeVideoModal(); });
+  DOM.vidPrev?.addEventListener('click', () => {
+    if (State.videoIndex > 0) openVideoModal(State.videoIndex - 1);
+  });
+  DOM.vidNext?.addEventListener('click', () => {
+    if (State.videoIndex < State.data.videos.length - 1) openVideoModal(State.videoIndex + 1);
+  });
+  DOM.modalVideo?.addEventListener('canplay', hideLoadingToast);
+  DOM.modalVideo?.addEventListener('waiting', () => showLoadingToast('Buffering…'));
 }
 
-/* ═══════════════════════════════════════════════════════════
-   ECHO
-═══════════════════════════════════════════════════════════ */
+/* ─── ECHO ─────────────────────────────────────────────── */
 function renderEcho() {
   const C = document.getElementById('echo-grid');
   const all = State.data.echo.all;
@@ -734,9 +776,10 @@ function openEchoById(id) {
   item.type==='pdf' ? openPdfModal(item) : openTxtReader(item);
 }
 
+/* ─── TXT READER ────────────────────────────────────────── */
 async function openTxtReader(item) {
   document.getElementById('reader-doc-title').textContent = item.title||item.file||'—';
-  document.getElementById('reader-eyebrow').textContent   = 'प्रतिध्वनि · Echo';
+  document.getElementById('reader-eyebrow').textContent   = 'Echo · Writing';
   DOM.readerContent.textContent = 'Loading…';
   DOM.txtReader.classList.add('open');
   const wrap = document.querySelector('.reader-content-wrap');
@@ -747,15 +790,19 @@ async function openTxtReader(item) {
     DOM.readerContent.textContent = await r.text();
     setTimeout(() => { wrap.scrollTop = Store.getTxtScroll(item.id); }, 80);
   } catch(e) {
-    console.warn('[Shunya] TXT fail:',item.url,e.message);
-    DOM.readerContent.textContent =
-      `${item.title||''}\n\n[Could not load: ${item.url}]\n\nRun from a local web server, not file://`;
+    console.warn('[Shunya] TXT fail:', item.url, e.message);
+    DOM.readerContent.textContent = `${item.title||''}\n\n[Could not load: ${item.url}]\n\nRun from a local web server.`;
   }
 
-  wrap.addEventListener('scroll', () => {
+  const updateProgress = () => {
+    const h = wrap.scrollHeight - wrap.clientHeight;
     Store.saveTxtScroll(item.id, wrap.scrollTop);
-    Store.saveTxtHeight(item.id, wrap.scrollHeight - wrap.clientHeight);
-  }, {passive:true});
+    Store.saveTxtHeight(item.id, h);
+    if (DOM.readerPFill && h > 0) {
+      DOM.readerPFill.style.width = Math.round((wrap.scrollTop/h)*100)+'%';
+    }
+  };
+  wrap.addEventListener('scroll', updateProgress, {passive:true});
 }
 
 function initTxtReader() {
@@ -764,65 +811,125 @@ function initTxtReader() {
   document.getElementById('reader-close-top')?.addEventListener('click', close);
 }
 
-/* ═══════════════════════════════════════════════════════════
-   PDF MODAL
-═══════════════════════════════════════════════════════════ */
-function openPdfModal(item) {
+/* ─── PDF READER ② canvas-based, inspired by scriptPDF.js ─ */
+async function openPdfModal(item) {
   State.pdf.currentItem = item;
-  const page = Store.getPdfPage(item.id);
   document.getElementById('pdf-modal-title').textContent = item.title||item.file||'—';
-  document.getElementById('pdf-page-num').value          = page;
-  document.getElementById('pdf-total-pages').textContent = '?';
   document.getElementById('pdf-dl-btn').href             = item.url;
   document.getElementById('pdf-dl-btn').setAttribute('download', item.file||'');
-  DOM.pdfIframe.src = item.url + (page>1 ? `#page=${page}` : '');
+
+  // Reset
+  DOM.pdfContainer.innerHTML = '';
+  if (DOM.pdfProgressFill) DOM.pdfProgressFill.style.width = '0%';
   DOM.pdfModal.classList.add('open');
+
+  // Show loader
+  if (DOM.pdfLoader) DOM.pdfLoader.classList.add('show');
+
+  try {
+    const pdfJsLib = window['pdfjs-dist/build/pdf'] || window.pdfjsLib;
+    if (!pdfJsLib) throw new Error('pdf.js not loaded');
+
+    pdfJsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    const pdfDoc = await pdfJsLib.getDocument(item.url).promise;
+    State.pdf.doc = pdfDoc;
+    document.getElementById('pdf-total-pages').textContent = pdfDoc.numPages;
+
+    if (DOM.pdfLoader) DOM.pdfLoader.classList.remove('show');
+
+    for (let i = 1; i <= pdfDoc.numPages; i++) {
+      const page = await pdfDoc.getPage(i);
+      const viewport = page.getViewport({ scale: 1.5 });
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.height = viewport.height;
+      canvas.width  = viewport.width;
+      canvas.style.width  = '100%';
+      canvas.style.maxWidth = '860px';
+      canvas.dataset.page = i;
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      DOM.pdfContainer.appendChild(canvas);
+    }
+
+    // Restore scroll position
+    setTimeout(() => {
+      const saved = Store.getPdfScroll(item.id);
+      if (saved > 0) DOM.pdfContainer.scrollTop = saved;
+    }, 100);
+
+  } catch(err) {
+    if (DOM.pdfLoader) DOM.pdfLoader.classList.remove('show');
+    console.warn('[Shunya] PDF fail:', item.url, err.message);
+    DOM.pdfContainer.innerHTML = `<div style="color:var(--text-muted);padding:40px;text-align:center;font-family:var(--font-serif)">
+      <p>Could not render PDF.</p>
+      <p style="margin-top:12px;font-size:.85rem;color:var(--text-dim)">${err.message}</p>
+      <p style="margin-top:16px"><a href="${item.url}" target="_blank" style="color:var(--orchid)">Open in new tab instead →</a></p>
+    </div>`;
+  }
+
+  // Track scroll progress + page number
+  DOM.pdfContainer.addEventListener('scroll', () => {
+    const h = DOM.pdfContainer.scrollHeight - DOM.pdfContainer.clientHeight;
+    const s = DOM.pdfContainer.scrollTop;
+    Store.savePdfScroll(item.id, s);
+    Store.savePdfHeight(item.id, h);
+    if (DOM.pdfProgressFill && h > 0)
+      DOM.pdfProgressFill.style.width = Math.round((s/h)*100)+'%';
+    // Update page number display
+    if (State.pdf.doc) {
+      const canvases = DOM.pdfContainer.querySelectorAll('canvas[data-page]');
+      canvases.forEach(cv => {
+        const rect = cv.getBoundingClientRect();
+        const containerRect = DOM.pdfContainer.getBoundingClientRect();
+        if (rect.top <= containerRect.top + containerRect.height * 0.5 &&
+            rect.bottom >= containerRect.top) {
+          const pi = document.getElementById('pdf-page-num');
+          if (pi) pi.value = cv.dataset.page;
+        }
+      });
+    }
+  }, {passive:true});
 }
 
 function closePdfModal() {
-  if (State.pdf.currentItem) {
-    const p = parseInt(document.getElementById('pdf-page-num').value)||1;
-    Store.savePdfPage(State.pdf.currentItem.id, p);
-  }
   DOM.pdfModal.classList.remove('open');
-  DOM.pdfIframe.src = '';
-  State.pdf.currentItem = null;
-}
-
-function goToPdfPage(p) {
-  if (!State.pdf.currentItem) return;
-  const page = Math.max(1, parseInt(p)||1);
-  document.getElementById('pdf-page-num').value = page;
-  DOM.pdfIframe.src = State.pdf.currentItem.url + `#page=${page}`;
 }
 
 function initPdfModal() {
   document.getElementById('pdf-close-btn')?.addEventListener('click', closePdfModal);
   DOM.pdfModal?.addEventListener('click', e => { if(e.target===DOM.pdfModal) closePdfModal(); });
+
+  // Page number jump
   const pi = document.getElementById('pdf-page-num');
-  pi?.addEventListener('change', () => goToPdfPage(pi.value));
-  pi?.addEventListener('keydown', e => { if(e.key==='Enter') goToPdfPage(pi.value); });
-  document.getElementById('pdf-prev-page')?.addEventListener('click', () =>
-    goToPdfPage((parseInt(pi?.value)||1)-1)
-  );
-  document.getElementById('pdf-next-page')?.addEventListener('click', () =>
-    goToPdfPage((parseInt(pi?.value)||1)+1)
-  );
+  const goToPage = () => {
+    const page = parseInt(pi?.value)||1;
+    const cv = DOM.pdfContainer?.querySelector(`canvas[data-page="${page}"]`);
+    if (cv) cv.scrollIntoView({behavior:'smooth'});
+  };
+  pi?.addEventListener('change', goToPage);
+  pi?.addEventListener('keydown', e => { if(e.key==='Enter') goToPage(); });
+  document.getElementById('pdf-prev-page')?.addEventListener('click', () => {
+    if (pi) { pi.value = Math.max(1,(parseInt(pi.value)||1)-1); goToPage(); }
+  });
+  document.getElementById('pdf-next-page')?.addEventListener('click', () => {
+    if (pi && State.pdf.doc) { pi.value = Math.min(State.pdf.doc.numPages,(parseInt(pi.value)||1)+1); goToPage(); }
+  });
 }
 
-/* ═══════════════════════════════════════════════════════════
-   IMAGES
-═══════════════════════════════════════════════════════════ */
+/* ─── IMAGES ③ lightbox with navigation ──────────────── */
 function renderImages() {
   const C = document.getElementById('images-grid');
   const imgs = State.data.images;
   if (!imgs.length) { C.innerHTML = emptyState('◎','No images. Add files to <code>shunya/images/</code> and run <code>generate_json.py</code>'); return; }
+  State.lightboxImages = imgs;
   C.innerHTML = imgs.map((img,i) => `
-    <div class="image-card animate-in" data-id="${img.id}" style="animation-delay:${i*.04}s">
+    <div class="image-card animate-in" data-id="${img.id}" data-idx="${i}" style="animation-delay:${i*.04}s">
       <img data-src="${img.url}" alt="" loading="lazy">
       <div class="image-card-overlay">
         <span class="image-caption">${img.file||''}</span>
-        <a href="${img.url}" download class="image-download-btn">↓</a>
+        <a href="${img.url}" download="${img.file||''}" class="image-download-btn" onclick="event.stopPropagation()">↓</a>
       </div>
     </div>`).join('');
   lazyLoad(C);
@@ -834,45 +941,78 @@ function renderImages() {
   );
 }
 
-function openImageById(id) {
-  const img = State.data.images.find(i=>i.id===id);
+function openImageById(id, fromHome = false) {
+  const imgs = State.lightboxImages.length ? State.lightboxImages : State.data.images;
+  const idx  = imgs.findIndex(i=>i.id===id);
+  if (idx < 0 && id) {
+    const img = State.data.images.find(i=>i.id===id);
+    if (!img) return;
+    Store.addRecentImage(id);
+    DOM.lightboxImg.src         = img.url;
+    DOM.lightboxCap.textContent = img.file||'';
+    DOM.lightboxDl.href         = img.url;
+    DOM.lightbox.classList.add('open');
+    return;
+  }
+  State.lightboxIndex = idx;
+  _showLightboxFrame(imgs, idx);
+  DOM.lightbox.classList.add('open');
+}
+
+function _showLightboxFrame(imgs, idx) {
+  const img = imgs[idx];
   if (!img) return;
-  Store.addRecentImage(id);
+  Store.addRecentImage(img.id);
   DOM.lightboxImg.src         = img.url;
   DOM.lightboxCap.textContent = img.file||'';
   DOM.lightboxDl.href         = img.url;
-  DOM.lightbox.classList.add('open');
+  if (DOM.lbCounter) DOM.lbCounter.textContent = `${idx+1} / ${imgs.length}`;
+  if (DOM.lbPrev)    DOM.lbPrev.disabled  = idx <= 0;
+  if (DOM.lbNext)    DOM.lbNext.disabled  = idx >= imgs.length-1;
 }
 
 function initLightbox() {
   document.getElementById('lightbox-close')?.addEventListener('click', () => DOM.lightbox.classList.remove('open'));
   DOM.lightbox?.addEventListener('click', e => { if(e.target===DOM.lightbox) DOM.lightbox.classList.remove('open'); });
+  DOM.lbPrev?.addEventListener('click', e => {
+    e.stopPropagation();
+    const imgs = State.lightboxImages.length ? State.lightboxImages : State.data.images;
+    if (State.lightboxIndex > 0) { State.lightboxIndex--; _showLightboxFrame(imgs, State.lightboxIndex); }
+  });
+  DOM.lbNext?.addEventListener('click', e => {
+    e.stopPropagation();
+    const imgs = State.lightboxImages.length ? State.lightboxImages : State.data.images;
+    if (State.lightboxIndex < imgs.length-1) { State.lightboxIndex++; _showLightboxFrame(imgs, State.lightboxIndex); }
+  });
+  // Keyboard navigation in lightbox
+  document.addEventListener('keydown', e => {
+    if (!DOM.lightbox?.classList.contains('open')) return;
+    const imgs = State.lightboxImages.length ? State.lightboxImages : State.data.images;
+    if (e.key==='ArrowRight' && State.lightboxIndex < imgs.length-1) { State.lightboxIndex++; _showLightboxFrame(imgs, State.lightboxIndex); }
+    if (e.key==='ArrowLeft'  && State.lightboxIndex > 0) { State.lightboxIndex--; _showLightboxFrame(imgs, State.lightboxIndex); }
+  });
 }
 
-/* ═══════════════════════════════════════════════════════════
-   BOOKS
-═══════════════════════════════════════════════════════════ */
+/* ─── BOOKS ─────────────────────────────────────────────── */
 function renderBooks() {
   const C = document.getElementById('books-grid');
   const books = State.data.books;
   if (!books.length) { C.innerHTML = emptyState('⊟','No books. Add PDFs to <code>shunya/books/pdfs/</code> and run <code>generate_json.py</code>'); return; }
-  C.innerHTML = `<div class="content-grid">${books.map((b,i) => buildCard(b,{badge:'ग्रंथ',delay:i*.06})).join('')}</div>`;
+  C.innerHTML = `<div class="content-grid">${books.map((b,i) => buildCard(b,{badge:'PDF',delay:i*.06})).join('')}</div>`;
   lazyLoad(C);
   C.querySelectorAll('.content-card').forEach(card => {
     const item = books.find(b=>b.id===card.dataset.id);
     if (!item) return;
     const act = document.createElement('div');
     act.className = 'card-actions';
-    act.innerHTML = `<button class="btn-read">Read</button><a href="${item.url}" download class="btn-dl">↓ Save</a>`;
+    act.innerHTML = `<button class="btn-read">Read</button><a href="${item.url}" download="${item.file||''}" class="btn-dl">↓ Save</a>`;
     card.appendChild(act);
     card.addEventListener('click', e => { if(e.target.classList.contains('btn-dl')) return; openPdfModal(item); });
     act.querySelector('.btn-read').addEventListener('click', e => { e.stopPropagation(); openPdfModal(item); });
   });
 }
 
-/* ═══════════════════════════════════════════════════════════
-   AMBIENT
-═══════════════════════════════════════════════════════════ */
+/* ─── AMBIENT ① loading toast ⑤⑥ ─────────────────────── */
 function renderAmbient() {
   const grid  = document.getElementById('ambient-grid');
   const items = State.data.ambient;
@@ -886,7 +1026,7 @@ function renderAmbient() {
           ? `<div class="ambient-np-thumb" style="background-image:url('${active.thumbnailUrl}')"></div>`
           : `<div class="ambient-np-thumb ambient-np-thumb--empty">〰</div>`}
         <div class="ambient-np-info">
-          <div class="ambient-np-label">अनुभूति · Now playing</div>
+          <div class="ambient-np-label">Now playing</div>
           <div class="ambient-np-title">${active.title}</div>
         </div>
         <div class="ambient-np-controls">
@@ -926,11 +1066,16 @@ function toggleAmbient(id) {
   if (State.ambient.currentId===id && State.ambient.isPlaying) { stopAmbient(); State.rendered.delete('ambient'); renderAmbient(); return; }
   if (State.isMobile && State.audio.isPlaying) { DOM.mainAudio.pause(); State.audio.isPlaying=false; refreshAudioUI(); }
   stopAmbient();
+
   DOM.ambientAudio.src    = item.url;
   DOM.ambientAudio.loop   = true;
   DOM.ambientAudio.volume = State.ambient.volume;
+
+  showLoadingToast('Loading ambient…');
+
   DOM.ambientAudio.play()
     .then(() => {
+      hideLoadingToast();
       State.ambient.currentId = id;
       State.ambient.isPlaying = true;
       updateAmbientMiniSidebar(item);
@@ -938,7 +1083,11 @@ function toggleAmbient(id) {
       State.rendered.delete('ambient');
       renderAmbient();
     })
-    .catch(e => { console.warn('[Shunya] Ambient fail:',item.url,e.message); showToast('Could not load ambient sound.'); });
+    .catch(e => {
+      hideLoadingToast();
+      console.warn('[Shunya] Ambient fail:', item.url, e.message);
+      showToast('Could not load ambient sound.');
+    });
 }
 
 function stopAmbient() {
@@ -958,19 +1107,54 @@ function updateAmbientMiniSidebar(item) {
   else       { mini.classList.remove('active'); el.textContent = 'No ambient'; }
 }
 
+/* ─── AMBIENT WIDGET ⑤⑥ ───────────────────────────────── */
 function showAmbientWidget(item) {
   if (!DOM.ambWidget) return;
   DOM.ambWidget.classList.add('visible');
   if (DOM.awTitle) DOM.awTitle.textContent = item.title||'—';
-  if (DOM.awThumb) {
-    DOM.awThumb.innerHTML = item.thumbnailUrl
-      ? `<img src="${item.thumbnailUrl}" alt="${item.title}" style="width:100%;height:100%;object-fit:cover;">`
-      : '<div class="aw-thumb-empty">〰</div>';
+
+  // Update image area
+  if (DOM.awImageWrap) {
+    if (item.thumbnailUrl) {
+      const existing = DOM.awImageWrap.querySelector('img');
+      if (!existing) {
+        const img = document.createElement('img');
+        img.src = item.thumbnailUrl; img.alt = item.title;
+        DOM.awImageWrap.innerHTML = '';
+        DOM.awImageWrap.appendChild(img);
+      } else {
+        existing.src = item.thumbnailUrl;
+      }
+    } else {
+      DOM.awImageWrap.innerHTML = '<div class="aw-img-empty">〰</div>';
+    }
+    applyAmbientImgMode();
   }
+
+  // Update nav buttons
+  const items = State.data.ambient;
+  const idx   = items.findIndex(a=>a.id===item.id);
+  if (DOM.awPrevBtn) DOM.awPrevBtn.disabled = idx <= 0;
+  if (DOM.awNextBtn) DOM.awNextBtn.disabled = idx >= items.length-1;
+
   updateWidgetPlayIcon();
 }
 
-function hideAmbientWidget() { DOM.ambWidget?.classList.remove('visible'); }
+function hideAmbientWidget() {
+  // ⑤ Only hides the UI — does NOT stop audio
+  DOM.ambWidget?.classList.remove('visible');
+}
+
+function applyAmbientImgMode() {
+  if (!DOM.awImageWrap) return;
+  DOM.awImageWrap.classList.remove('aw-blur','aw-hide');
+  if (State.ambientImgMode==='blur') DOM.awImageWrap.classList.add('aw-blur');
+  if (State.ambientImgMode==='hide') DOM.awImageWrap.classList.add('aw-hide');
+  // Update buttons
+  document.querySelectorAll('.aw-img-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.mode===State.ambientImgMode)
+  );
+}
 
 function updateWidgetPlayIcon() {
   if (!DOM.awPlayBtn) return;
@@ -987,7 +1171,8 @@ function initAmbientControls() {
   document.querySelector('.ambient-mini-stop')?.addEventListener('click', () => {
     stopAmbient(); State.rendered.delete('ambient'); renderAmbient();
   });
-  DOM.ambientAudio?.addEventListener('error', () => showToast('Ambient audio error.'));
+  DOM.ambientAudio?.addEventListener('canplay', hideLoadingToast);
+  DOM.ambientAudio?.addEventListener('error', () => { hideLoadingToast(); showToast('Ambient error.'); });
 }
 
 function initAmbientWidget() {
@@ -997,9 +1182,9 @@ function initAmbientWidget() {
     e.stopPropagation();
     if (!State.ambient.currentId) return;
     if (State.ambient.isPlaying) {
-      DOM.ambientAudio.pause(); State.ambient.isPlaying = false;
+      DOM.ambientAudio.pause(); State.ambient.isPlaying=false;
     } else {
-      DOM.ambientAudio.play().catch(()=>{}); State.ambient.isPlaying = true;
+      DOM.ambientAudio.play().catch(()=>{}); State.ambient.isPlaying=true;
     }
     updateWidgetPlayIcon();
     State.rendered.delete('ambient'); renderAmbient();
@@ -1011,12 +1196,38 @@ function initAmbientWidget() {
   });
   if (DOM.awVolume) DOM.awVolume.value = State.ambient.volume*100;
 
+  // Prev / Next in ambient widget
+  DOM.awPrevBtn?.addEventListener('click', e => {
+    e.stopPropagation();
+    const items = State.data.ambient;
+    const idx = items.findIndex(a=>a.id===State.ambient.currentId);
+    if (idx > 0) toggleAmbient(items[idx-1].id);
+  });
+  DOM.awNextBtn?.addEventListener('click', e => {
+    e.stopPropagation();
+    const items = State.data.ambient;
+    const idx = items.findIndex(a=>a.id===State.ambient.currentId);
+    if (idx < items.length-1) toggleAmbient(items[idx+1].id);
+  });
+
+  // Stop button — this DOES stop audio
   document.getElementById('aw-stop')?.addEventListener('click', e => {
     e.stopPropagation(); stopAmbient(); State.rendered.delete('ambient'); renderAmbient();
   });
+
+  // ⑤ Close = hide only, not stop
   document.getElementById('aw-close')?.addEventListener('click', e => {
     e.stopPropagation(); hideAmbientWidget();
   });
+
+  // ⑥ Image mode toggle
+  document.querySelectorAll('.aw-img-btn').forEach(btn =>
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      State.ambientImgMode = btn.dataset.mode;
+      applyAmbientImgMode();
+    })
+  );
 
   // Draggable
   let dragging=false, ox=0, oy=0;
@@ -1054,30 +1265,68 @@ function initAmbientWidget() {
   document.addEventListener('touchend', () => { dragging=false; });
 }
 
-/* ═══════════════════════════════════════════════════════════
-   RANDOM WISDOM
-═══════════════════════════════════════════════════════════ */
+/* ─── RANDOM WISDOM ⑧ ─────────────────────────────────── */
 function randomWisdom() {
-  const pool = [
-    ...State.data.audios.map(a  => ({type:'audio',id:a.id})),
-    ...State.data.echo.all.map(e => ({type:'echo', id:e.id})),
-    ...State.data.images.map(i  => ({type:'image',id:i.id})),
-    ...State.data.books.map(b   => ({type:'book', id:b.id})),
-  ];
+  const current = State.currentSection;
+
+  // Pick pool from current section, or all if on home
+  let pool = [];
+  if (current==='audios' || current==='home') {
+    pool = [...pool, ...State.data.audios.map(a => ({type:'audio',id:a.id}))];
+  }
+  if (current==='echo' || current==='home') {
+    pool = [...pool, ...State.data.echo.all.map(e => ({type:'echo',id:e.id}))];
+  }
+  if (current==='images' || current==='home') {
+    pool = [...pool, ...State.data.images.map(i => ({type:'image',id:i.id}))];
+  }
+  if (current==='books' || current==='home') {
+    pool = [...pool, ...State.data.books.map(b => ({type:'book',id:b.id}))];
+  }
+  if (current==='videos' || current==='home') {
+    pool = [...pool, ...State.data.videos.map(v => ({type:'video',id:v.id}))];
+  }
+
+  if (!pool.length) {
+    // Fallback: all
+    pool = [
+      ...State.data.audios.map(a => ({type:'audio',id:a.id})),
+      ...State.data.echo.all.map(e => ({type:'echo',id:e.id})),
+      ...State.data.images.map(i => ({type:'image',id:i.id})),
+      ...State.data.books.map(b => ({type:'book',id:b.id})),
+    ];
+  }
   if (!pool.length) return showToast('Nothing in the library yet.');
+
   const pick = pool[Math.floor(Math.random()*pool.length)];
-  showToast('Opening something unexpected…');
+  showToast('Opening something magical…');
+
   setTimeout(() => {
-    if (pick.type==='audio') { navigateTo('audios'); setTimeout(()=>playAudioById(pick.id),400); }
-    if (pick.type==='echo')  { navigateTo('echo');   setTimeout(()=>openEchoById(pick.id),400);  }
-    if (pick.type==='image') { navigateTo('images'); setTimeout(()=>openImageById(pick.id),500); }
-    if (pick.type==='book')  { navigateTo('books'); }
+    if (pick.type==='audio') {
+      // ⑧ On home: play audio without navigating
+      if (current==='home') { playAudioById(pick.id); }
+      else { navigateTo('audios'); setTimeout(()=>playAudioById(pick.id),400); }
+    }
+    if (pick.type==='echo') {
+      if (current==='home') { const item=State.data.echo.all.find(e=>e.id===pick.id); if(item) openEchoById(pick.id); }
+      else { navigateTo('echo'); setTimeout(()=>openEchoById(pick.id),400); }
+    }
+    if (pick.type==='image') {
+      // Open lightbox without navigating
+      openImageById(pick.id, true);
+    }
+    if (pick.type==='book') {
+      if (current==='home') { const item=State.data.books.find(b=>b.id===pick.id); if(item) openPdfModal(item); }
+      else { navigateTo('books'); }
+    }
+    if (pick.type==='video') {
+      const idx = State.data.videos.findIndex(v=>v.id===pick.id);
+      if (idx>=0) openVideoModal(idx);
+    }
   }, 600);
 }
 
-/* ═══════════════════════════════════════════════════════════
-   ABOUT MODAL
-═══════════════════════════════════════════════════════════ */
+/* ─── ABOUT MODAL ──────────────────────────────────────── */
 function initAboutModal() {
   document.querySelector('.sidebar-logo')?.addEventListener('click', () =>
     DOM.aboutModal?.classList.add('open')
@@ -1090,9 +1339,7 @@ function initAboutModal() {
   });
 }
 
-/* ═══════════════════════════════════════════════════════════
-   MOBILE NAV + OVERLAY CLOSE ③
-═══════════════════════════════════════════════════════════ */
+/* ─── MOBILE NAV ⑩ overlay close ──────────────────────── */
 function openSidebar() {
   DOM.sidebar.classList.add('open');
   if (DOM.sidebarOverlay) {
@@ -1113,41 +1360,25 @@ function closeSidebar() {
 
 function initMobileNav() {
   document.getElementById('mobile-menu-toggle')?.addEventListener('click', () => {
-    if (DOM.sidebar.classList.contains('open')) { closeSidebar(); }
-    else { openSidebar(); }
+    DOM.sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
   });
-
-  // ③ Click outside sidebar closes it
   DOM.sidebarOverlay?.addEventListener('click', closeSidebar);
-
   window.addEventListener('resize', () => { State.isMobile = innerWidth < 900; });
 }
 
-/* ═══════════════════════════════════════════════════════════
-   CONTENT PROTECTION ⑤
-═══════════════════════════════════════════════════════════ */
+/* ─── CONTENT PROTECTION ───────────────────────────────── */
 function initContentProtection() {
-  // Disable right-click
   document.addEventListener('contextmenu', e => e.preventDefault());
-
-  // Disable image dragging
-  document.addEventListener('dragstart', e => {
-    if (e.target.tagName==='IMG') e.preventDefault();
-  });
-
-  // Prevent text selection via mouse on protected areas
-  // (text-select is re-enabled in CSS for .reader-content etc.)
+  document.addEventListener('dragstart', e => { if(e.target.tagName==='IMG') e.preventDefault(); });
 }
 
-/* ═══════════════════════════════════════════════════════════
-   ESC KEY
-═══════════════════════════════════════════════════════════ */
+/* ─── ESC KEY ──────────────────────────────────────────── */
 function initEscKey() {
   document.addEventListener('keydown', e => {
     if (e.key!=='Escape') return;
     DOM.txtReader?.classList.remove('open');
     DOM.lightbox?.classList.remove('open');
-    if (DOM.pdfModal?.classList.contains('open')) closePdfModal();
+    closePdfModal();
     DOM.aboutModal?.classList.remove('open');
     closeVideoModal();
     closeSidebar();
@@ -1156,30 +1387,27 @@ function initEscKey() {
   });
 }
 
-/* ═══════════════════════════════════════════════════════════
-   SITE META
-═══════════════════════════════════════════════════════════ */
+/* ─── SITE META ────────────────────────────────────────── */
 function initSiteMeta() {
-  const g = State.data.global;
-  const name = g?.site?.name||'ShunyaSpace';
-  const sub  = g?.site?.subtitle||'शून्य — the void that holds everything';
+  const g    = State.data.global;
+  const name = g?.site?.name    || 'ShunyaSpace';
+  const sub  = g?.site?.subtitle || 'शून्य — the void that holds everything';
   const ne = document.getElementById('logo-name');
   const se = document.getElementById('logo-sub');
   if (ne) ne.textContent = name;
   if (se) se.textContent = sub;
+  const mtn = document.getElementById('mobile-topbar-name');
+  if (mtn) mtn.textContent = name;
   document.title = name;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   TOAST + EMPTY STATE
-═══════════════════════════════════════════════════════════ */
+/* ─── TOAST ─────────────────────────────────────────────── */
 function showToast(msg, ms=3000) {
   if (!DOM.toast) return;
   DOM.toast.innerHTML = msg;
   DOM.toast.classList.add('show');
   setTimeout(() => DOM.toast.classList.remove('show'), ms);
 }
-
 function emptyState(glyph, msg) {
   return `<div class="empty-state">
     <div class="empty-state-glyph">${glyph}</div>
@@ -1187,22 +1415,19 @@ function emptyState(glyph, msg) {
   </div>`;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   STARS + FLOATING PARTICLES
-═══════════════════════════════════════════════════════════ */
+/* ─── STARS ─────────────────────────────────────────────── */
 function initStars() {
   const cv = document.getElementById('stars-canvas');
   if (!cv) return;
   const ctx = cv.getContext('2d');
   const resize = () => { cv.width=innerWidth; cv.height=innerHeight; };
-  resize(); window.addEventListener('resize',resize);
+  resize(); window.addEventListener('resize', resize);
 
   const stars = Array.from({length:140}, () => ({
     x:Math.random(), y:Math.random(),
     r:Math.random()*.9+.15, o:Math.random()*.45+.08,
     s:Math.random()*.0003+.0001, p:Math.random()*Math.PI*2,
-    drift: (Math.random()-.5)*.00008, // very slow drift
-    dx:0, dy:0,
+    drift:(Math.random()-.5)*.00006, dx:0, dy:0,
   }));
 
   let t=0;
@@ -1210,23 +1435,19 @@ function initStars() {
     ctx.clearRect(0,0,cv.width,cv.height);
     t+=.008;
     stars.forEach(s => {
-      // Slow drift
-      s.dx += s.drift; s.dy += s.drift*.5;
-      const x = (s.x + s.dx) % 1;
-      const y = (s.y + s.dy) % 1;
-      const opacity = s.o*(0.55+0.45*Math.sin(t*s.s*120+s.p));
+      s.dx += s.drift; s.dy += s.drift*.4;
+      const x = (s.x+s.dx)%1; const y = (s.y+s.dy)%1;
+      const op = s.o*(0.55+0.45*Math.sin(t*s.s*120+s.p));
       ctx.beginPath();
-      ctx.arc(x*cv.width, y*cv.height, s.r, 0, Math.PI*2);
-      ctx.fillStyle = `rgba(192,132,252,${opacity})`;
+      ctx.arc((x<0?x+1:x)*cv.width, (y<0?y+1:y)*cv.height, s.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(192,132,252,${op})`;
       ctx.fill();
     });
     requestAnimationFrame(draw);
   })();
 }
 
-/* ═══════════════════════════════════════════════════════════
-   BOOT
-═══════════════════════════════════════════════════════════ */
+/* ─── BOOT ──────────────────────────────────────────────── */
 async function boot() {
   cacheDom();
   await loadAllData();
