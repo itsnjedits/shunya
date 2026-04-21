@@ -2,9 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>ShunyaSpace</title>
   <meta name="description" content="A silence you can enter. A digital space for introspection.">
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#07060f">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ShunyaSpace">
+  <link rel="apple-touch-icon" href="pwa_icon/splash.png">
+  <link rel="apple-touch-startup-image" href="pwa_icon/splash.png">
+  <meta name="msapplication-TileColor" content="#07060f">
+  <meta name="msapplication-TileImage" content="pwa_icon/splash.png">
+
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="styles.css">
   <!-- PDF.js for canvas-based PDF rendering -->
@@ -104,11 +117,6 @@
         <p class="section-subtitle">Background sounds for presence. Soft, looping, gentle.</p>
       </div>
       <div id="ambient-grid"></div>
-      <!-- Volume slider only shown when no ambient playing; hidden otherwise by JS -->
-      <div class="ambient-volume-row" id="ambient-vol-row">
-        <span class="ambient-volume-label">Volume</span>
-        <input type="range" id="ambient-volume" min="0" max="100" value="30" aria-label="Ambient volume">
-      </div>
     </section>
 
     <!-- VIDEOS -->
@@ -204,13 +212,14 @@
     <button id="btn-speed" title="Playback speed" aria-label="Playback speed">1×</button>
 
     <div class="player-vol">
-      <button class="btn-vol-icon" id="btn-vol-mute" title="Mute" aria-label="Mute">
+      <button class="btn-vol-icon" id="btn-vol-mute" title="Volume" aria-label="Volume">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
           <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
         </svg>
       </button>
-      <input type="range" id="player-volume" min="0" max="100" value="85" aria-label="Volume">
+      <!-- Slider hidden on mobile; popup used instead -->
+      <input type="range" id="player-volume" min="0" max="100" value="85" aria-label="Volume" class="desktop-vol-slider">
     </div>
 
     <a id="player-download" href="#" title="Download" aria-label="Download">
@@ -221,6 +230,32 @@
       </svg>
     </a>
   </div>
+</div>
+
+<!-- Volume Popup — audio player (icon click) -->
+<div id="vol-popup" class="vol-popup" role="dialog" aria-label="Audio volume">
+  <div class="vol-popup-label">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+      <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+    </svg>
+    Volume
+  </div>
+  <input type="range" id="vol-popup-slider" min="0" max="100" value="85" aria-label="Audio volume">
+  <div class="vol-popup-value" id="vol-popup-value">85%</div>
+</div>
+
+<!-- Volume Popup — ambient player (icon click) -->
+<div id="aw-vol-popup" class="vol-popup aw-vol-popup" role="dialog" aria-label="Ambient volume">
+  <div class="vol-popup-label">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+    </svg>
+    Ambient
+  </div>
+  <input type="range" id="aw-vol-popup-slider" min="0" max="100" value="30" aria-label="Ambient volume">
+  <div class="vol-popup-value" id="aw-vol-popup-value">30%</div>
 </div>
 
 <!-- Speed panel -->
@@ -306,7 +341,15 @@
       </svg>
     </button>
 
-    <input type="range" class="aw-volume" id="aw-volume" min="0" max="100" value="30" aria-label="Ambient volume">
+    <!-- Volume icon → opens popup -->
+    <button class="aw-vol-btn" id="aw-vol-btn" title="Volume" aria-label="Volume">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+      </svg>
+    </button>
+    <!-- Hidden range kept for JS sync -->
+    <input type="range" class="aw-volume" id="aw-volume" min="0" max="100" value="30" aria-label="Ambient volume" style="display:none">
     <button class="aw-stop" id="aw-stop" title="Stop ambient audio">■</button>
   </div>
 </div>
@@ -440,5 +483,15 @@
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script src="script.js"></script>
+<script>
+  /* ── PWA: Register Service Worker ── */
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./service-worker.js')
+        .then(reg => console.log('[SW] Registered, scope:', reg.scope))
+        .catch(err => console.warn('[SW] Registration failed:', err));
+    });
+  }
+</script>
 </body>
 </html>

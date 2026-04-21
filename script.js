@@ -95,8 +95,16 @@ function cacheDom() {
   DOM.awImageWrap    = document.getElementById('aw-image-wrap');
   DOM.awPlayBtn      = document.getElementById('aw-play-btn');
   DOM.awVolume       = document.getElementById('aw-volume');
+  DOM.awVolBtn       = document.getElementById('aw-vol-btn');
+  DOM.awVolPopup     = document.getElementById('aw-vol-popup');
+  DOM.awVolPopupSlider = document.getElementById('aw-vol-popup-slider');
+  DOM.awVolPopupValue  = document.getElementById('aw-vol-popup-value');
   DOM.awPrevBtn      = document.getElementById('aw-prev');
   DOM.awNextBtn      = document.getElementById('aw-next');
+
+  DOM.volPopup       = document.getElementById('vol-popup');
+  DOM.volPopupSlider = document.getElementById('vol-popup-slider');
+  DOM.volPopupValue  = document.getElementById('vol-popup-value');
 
   DOM.loadingToast   = document.getElementById('loading-toast');
   DOM.ltPct          = document.getElementById('lt-pct');
@@ -619,23 +627,51 @@ function initPlayerBar() {
     DOM.mainAudio.currentTime = ((e.clientX-r.left)/r.width)*DOM.mainAudio.duration;
   });
 
-  DOM.volSlider?.addEventListener('input', function() {
-    State.audio.volume = this.value/100;
+  /* ── Volume: sync desktop slider + popup slider ── */
+  const syncVolume = (val) => {
+    State.audio.volume = val/100;
     DOM.mainAudio.volume = State.audio.volume;
-  });
+    if (DOM.volSlider)      DOM.volSlider.value = val;
+    if (DOM.volPopupSlider) DOM.volPopupSlider.value = val;
+    if (DOM.volPopupValue)  DOM.volPopupValue.textContent = Math.round(val)+'%';
+    const volBtn = document.getElementById('btn-vol-mute');
+    if (volBtn) volBtn.classList.toggle('muted', val == 0);
+  };
+
+  DOM.volSlider?.addEventListener('input', function() { syncVolume(+this.value); });
   if (DOM.volSlider) DOM.volSlider.value = State.audio.volume*100;
+
+  if (DOM.volPopupSlider) {
+    DOM.volPopupSlider.value = State.audio.volume*100;
+    DOM.volPopupSlider.addEventListener('input', function() { syncVolume(+this.value); });
+  }
+  if (DOM.volPopupValue) DOM.volPopupValue.textContent = Math.round(State.audio.volume*100)+'%';
+
   DOM.mainAudio.volume = State.audio.volume;
 
+  /* ── Volume icon → toggle popup (all screens); long-click = mute ── */
   let muteVol = State.audio.volume;
-  document.getElementById('btn-vol-mute')?.addEventListener('click', () => {
-    if (DOM.mainAudio.volume > 0) {
-      muteVol = DOM.mainAudio.volume;
-      DOM.mainAudio.volume = 0;
-      if (DOM.volSlider) DOM.volSlider.value = 0;
-    } else {
-      DOM.mainAudio.volume = muteVol;
-      State.audio.volume = muteVol;
-      if (DOM.volSlider) DOM.volSlider.value = muteVol*100;
+  let pressTimer = null;
+
+  const volIconBtn = document.getElementById('btn-vol-mute');
+  if (volIconBtn) {
+    volIconBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      if (DOM.volPopup) {
+        const isOpen = DOM.volPopup.classList.contains('open');
+        closeAllPopups();
+        if (!isOpen) DOM.volPopup.classList.add('open');
+      }
+    });
+  }
+
+  /* Close popup when clicking outside */
+  document.addEventListener('click', e => {
+    if (!DOM.volPopup?.contains(e.target) && e.target !== volIconBtn) {
+      DOM.volPopup?.classList.remove('open');
+    }
+    if (!DOM.awVolPopup?.contains(e.target) && e.target !== DOM.awVolBtn) {
+      DOM.awVolPopup?.classList.remove('open');
     }
   });
 
@@ -665,8 +701,12 @@ function setSpeed(rate) {
 function initSpeedPanel() {
   DOM.speedBtn?.addEventListener('click', e => {
     e.stopPropagation();
-    DOM.speedPanel?.classList.toggle('open');
-    DOM.speedBtn.classList.toggle('active', DOM.speedPanel?.classList.contains('open'));
+    const willOpen = !DOM.speedPanel?.classList.contains('open');
+    closeAllPopups();
+    if (willOpen) {
+      DOM.speedPanel?.classList.add('open');
+      DOM.speedBtn?.classList.add('active');
+    }
   });
   document.addEventListener('click', e => {
     if (!DOM.speedPanel?.contains(e.target) && e.target!==DOM.speedBtn) {
@@ -1012,6 +1052,14 @@ function renderBooks() {
   });
 }
 
+/* ─── POPUP HELPERS ─────────────────────────────────────── */
+function closeAllPopups() {
+  DOM.volPopup?.classList.remove('open');
+  DOM.awVolPopup?.classList.remove('open');
+  DOM.speedPanel?.classList.remove('open');
+  DOM.speedBtn?.classList.remove('active');
+}
+
 /* ─── AMBIENT ① loading toast ⑤⑥ ─────────────────────── */
 function renderAmbient() {
   const grid  = document.getElementById('ambient-grid');
@@ -1030,7 +1078,12 @@ function renderAmbient() {
           <div class="ambient-np-title">${active.title}</div>
         </div>
         <div class="ambient-np-controls">
-          <input type="range" class="ambient-vol-slider" min="0" max="100" value="${Math.round(State.ambient.volume*100)}">
+          <button class="ambient-vol-icon-btn" id="ambient-np-vol-btn" title="Volume" aria-label="Volume">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            </svg>
+          </button>
           <button class="ambient-stop-btn">■ Stop</button>
         </div>
       </div>` : ''}
@@ -1053,10 +1106,21 @@ function renderAmbient() {
   lazyLoad(grid);
   grid.querySelectorAll('.ambient-card').forEach(c => c.addEventListener('click', () => toggleAmbient(c.dataset.id)));
   grid.querySelector('.ambient-stop-btn')?.addEventListener('click', () => { stopAmbient(); State.rendered.delete('ambient'); renderAmbient(); });
-  grid.querySelector('.ambient-vol-slider')?.addEventListener('input', function() {
-    State.ambient.volume = this.value/100;
-    DOM.ambientAudio.volume = State.ambient.volume;
-    if (DOM.awVolume) DOM.awVolume.value = this.value;
+  /* Volume icon in now-playing → open aw-vol-popup */
+  grid.querySelector('#ambient-np-vol-btn')?.addEventListener('click', e => {
+    e.stopPropagation();
+    if (!DOM.awVolPopup) return;
+    const isOpen = DOM.awVolPopup.classList.contains('open');
+    closeAllPopups();
+    if (!isOpen) {
+      const btn = e.currentTarget;
+      const r = btn.getBoundingClientRect();
+      DOM.awVolPopup.style.left   = r.left + 'px';
+      DOM.awVolPopup.style.bottom = (window.innerHeight - r.top + 8) + 'px';
+      DOM.awVolPopup.style.top    = 'auto';
+      DOM.awVolPopup.style.right  = 'auto';
+      DOM.awVolPopup.classList.add('open');
+    }
   });
 }
 
@@ -1164,10 +1228,7 @@ function updateWidgetPlayIcon() {
 }
 
 function initAmbientControls() {
-  document.getElementById('ambient-volume')?.addEventListener('input', function() {
-    State.ambient.volume = this.value/100;
-    DOM.ambientAudio.volume = State.ambient.volume;
-  });
+  // The old #ambient-volume section slider is removed; volume handled via aw-vol-popup
   document.querySelector('.ambient-mini-stop')?.addEventListener('click', () => {
     stopAmbient(); State.rendered.delete('ambient'); renderAmbient();
   });
@@ -1190,11 +1251,39 @@ function initAmbientWidget() {
     State.rendered.delete('ambient'); renderAmbient();
   });
 
-  DOM.awVolume?.addEventListener('input', function() {
-    State.ambient.volume = this.value/100;
+  /* ── Ambient volume popup ── */
+  const syncAmbVol = (val) => {
+    State.ambient.volume = val/100;
     DOM.ambientAudio.volume = State.ambient.volume;
-  });
+    if (DOM.awVolume) DOM.awVolume.value = val;
+    if (DOM.awVolPopupSlider) DOM.awVolPopupSlider.value = val;
+    if (DOM.awVolPopupValue)  DOM.awVolPopupValue.textContent = Math.round(val)+'%';
+  };
+
   if (DOM.awVolume) DOM.awVolume.value = State.ambient.volume*100;
+
+  if (DOM.awVolPopupSlider) {
+    DOM.awVolPopupSlider.value = State.ambient.volume*100;
+    DOM.awVolPopupSlider.addEventListener('input', function() { syncAmbVol(+this.value); });
+  }
+  if (DOM.awVolPopupValue) DOM.awVolPopupValue.textContent = Math.round(State.ambient.volume*100)+'%';
+
+  /* Volume icon → toggle popup, positioned near widget */
+  DOM.awVolBtn?.addEventListener('click', e => {
+    e.stopPropagation();
+    if (!DOM.awVolPopup) return;
+    const isOpen = DOM.awVolPopup.classList.contains('open');
+    closeAllPopups();
+    if (!isOpen) {
+      /* Position popup near the widget */
+      const wr = DOM.ambWidget.getBoundingClientRect();
+      DOM.awVolPopup.style.bottom = (window.innerHeight - wr.top + 8) + 'px';
+      DOM.awVolPopup.style.right  = (window.innerWidth - wr.right) + 'px';
+      DOM.awVolPopup.style.top    = 'auto';
+      DOM.awVolPopup.style.left   = 'auto';
+      DOM.awVolPopup.classList.add('open');
+    }
+  });
 
   // Prev / Next in ambient widget
   DOM.awPrevBtn?.addEventListener('click', e => {
@@ -1212,12 +1301,12 @@ function initAmbientWidget() {
 
   // Stop button — this DOES stop audio
   document.getElementById('aw-stop')?.addEventListener('click', e => {
-    e.stopPropagation(); stopAmbient(); State.rendered.delete('ambient'); renderAmbient();
+    e.stopPropagation(); closeAllPopups(); stopAmbient(); State.rendered.delete('ambient'); renderAmbient();
   });
 
   // ⑤ Close = hide only, not stop
   document.getElementById('aw-close')?.addEventListener('click', e => {
-    e.stopPropagation(); hideAmbientWidget();
+    e.stopPropagation(); closeAllPopups(); hideAmbientWidget();
   });
 
   // ⑥ Image mode toggle
@@ -1382,8 +1471,7 @@ function initEscKey() {
     DOM.aboutModal?.classList.remove('open');
     closeVideoModal();
     closeSidebar();
-    DOM.speedPanel?.classList.remove('open');
-    DOM.speedBtn?.classList.remove('active');
+    closeAllPopups();
   });
 }
 
