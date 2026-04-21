@@ -12,23 +12,27 @@
 <body>
 
 <!-- Stars -->
-<canvas id="stars-canvas" style="position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.6;"></canvas>
+<canvas id="stars-canvas" style="position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.65;"></canvas>
 
 <!-- Mobile toggle -->
 <button id="mobile-menu-toggle" aria-label="Open menu">
   <span></span><span></span><span></span>
 </button>
 
-<!-- ══════════════════════════════════════════════════════
-     #app — flex root: sidebar + main
-══════════════════════════════════════════════════════ -->
+<!-- ── Mobile sidebar overlay (click to close) ③ ── -->
+<div id="sidebar-overlay" aria-hidden="true"></div>
+
+<!-- ══════════════════════════════════════════════
+     #app — flex root
+══════════════════════════════════════════════ -->
 <div id="app">
 
   <!-- ── SIDEBAR ── -->
   <aside id="sidebar" aria-label="Navigation">
 
-    <!-- Logo — click opens About modal -->
-    <div class="sidebar-logo" role="button" tabindex="0" aria-label="About ShunyaSpace" title="About ShunyaSpace">
+    <!-- Logo → About modal + breathing animation -->
+    <div class="sidebar-logo" role="button" tabindex="0"
+         aria-label="About ShunyaSpace" title="About ShunyaSpace">
       <div class="logo-mark">
         <svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
           <defs>
@@ -48,6 +52,7 @@
     </div>
 
     <nav aria-label="Site sections">
+      <!-- Injected by JS from FALLBACK_NAV or global.json -->
       <ul class="nav-list" id="nav-list"></ul>
     </nav>
 
@@ -55,7 +60,7 @@
       <div class="ambient-mini">
         <div class="ambient-mini-title">
           <span>No ambient</span>
-          <span class="ambient-mini-stop" title="Stop">✕</span>
+          <span class="ambient-mini-stop" title="Stop ambient">✕</span>
         </div>
       </div>
       <button id="btn-random"><span>✦</span> Random Wisdom</button>
@@ -65,7 +70,7 @@
   <!-- ── MAIN ── -->
   <main id="main">
 
-    <!-- HOME -->
+    <!-- HOME / PRAVAAH -->
     <section id="section-home" class="section" role="region" aria-label="Pravaah">
       <div class="section-header">
         <div class="section-eyebrow">Pravaah · प्रवाह</div>
@@ -74,21 +79,27 @@
       <div id="home-inner"></div>
     </section>
 
-    <!-- AUDIOS -->
+    <!-- AUDIOS / श्रवण ⑥ -->
     <section id="section-audios" class="section" role="region" aria-label="Shravan">
       <div class="section-header">
         <div class="section-eyebrow">Shravan · श्रवण</div>
-        <h1 class="section-title">What Is <em>Heard</em></h1>
+        <h1 class="section-title">
+          What Is <em>Heard</em>
+          <span class="section-title-hindi">श्रवण</span>
+        </h1>
         <p class="section-subtitle">Discourses, talks, and inquiries. Listen without conclusion.</p>
       </div>
       <div id="audios-list"></div>
     </section>
 
-    <!-- AMBIENT -->
-    <section id="section-ambient" class="section" role="region" aria-label="Ambient">
+    <!-- AMBIENT / अनुभूति ⑥ -->
+    <section id="section-ambient" class="section" role="region" aria-label="Anubhuti">
       <div class="section-header">
-        <div class="section-eyebrow">Ambient · परिवेश</div>
-        <h1 class="section-title"><em>Surrounding</em> Sound</h1>
+        <div class="section-eyebrow">Anubhuti · अनुभूति</div>
+        <h1 class="section-title">
+          <em>Surrounding</em> Sound
+          <span class="section-title-hindi">अनुभूति</span>
+        </h1>
         <p class="section-subtitle">Background sounds for presence. Soft, looping, gentle.</p>
       </div>
       <div id="ambient-grid"></div>
@@ -98,28 +109,34 @@
       </div>
     </section>
 
-    <!-- VIDEOS -->
-    <section id="section-videos" class="section" role="region" aria-label="Videos">
+    <!-- VIDEOS / दृश्य ⑥ -->
+    <section id="section-videos" class="section" role="region" aria-label="Drishya">
       <div class="section-header">
-        <div class="section-eyebrow">Videos · चलचित्र</div>
-        <h1 class="section-title"><em>Moving</em> Light</h1>
+        <div class="section-eyebrow">Drishya · दृश्य</div>
+        <h1 class="section-title">
+          <em>Moving</em> Light
+          <span class="section-title-hindi">दृश्य</span>
+        </h1>
         <p class="section-subtitle">Rare recordings. Watch once, slowly.</p>
       </div>
       <div id="videos-grid"></div>
     </section>
 
-    <!-- ECHO -->
-    <section id="section-echo" class="section" role="region" aria-label="Echo">
+    <!-- ECHO / प्रतिध्वनि ⑥ -->
+    <section id="section-echo" class="section" role="region" aria-label="Pratidhwani">
       <div class="section-header">
-        <div class="section-eyebrow">Echo · प्रतिध्वनि</div>
-        <h1 class="section-title">Words That <em>Remain</em></h1>
+        <div class="section-eyebrow">Pratidhwani · प्रतिध्वनि</div>
+        <h1 class="section-title">
+          Words That <em>Remain</em>
+          <span class="section-title-hindi">प्रतिध्वनि</span>
+        </h1>
         <p class="section-subtitle">Writings and teachings. Read slowly. Let them settle.</p>
       </div>
       <div id="echo-grid"></div>
     </section>
 
-    <!-- IMAGES -->
-    <section id="section-images" class="section" role="region" aria-label="Drishya">
+    <!-- IMAGES / दृश्य -->
+    <section id="section-images" class="section" role="region" aria-label="Drishya Images">
       <div class="section-header">
         <div class="section-eyebrow">Drishya · दृश्य</div>
         <h1 class="section-title">What Is <em>Seen</em></h1>
@@ -128,11 +145,14 @@
       <div class="images-grid" id="images-grid"></div>
     </section>
 
-    <!-- BOOKS -->
-    <section id="section-books" class="section" role="region" aria-label="Books">
+    <!-- BOOKS / ग्रंथ ⑥ -->
+    <section id="section-books" class="section" role="region" aria-label="Granth">
       <div class="section-header">
-        <div class="section-eyebrow">Books · ग्रंथ</div>
-        <h1 class="section-title"><em>Deeper</em> Waters</h1>
+        <div class="section-eyebrow">Granth · ग्रंथ</div>
+        <h1 class="section-title">
+          <em>Deeper</em> Waters
+          <span class="section-title-hindi">ग्रंथ</span>
+        </h1>
         <p class="section-subtitle">Full texts. Not for speed-reading.</p>
       </div>
       <div id="books-grid"></div>
@@ -141,9 +161,9 @@
   </main>
 </div><!-- /#app -->
 
-<!-- ══════════════════════════════════════════════════════
-     AUDIO PLAYER BAR (SoundAura-inspired, ShunyaSpace palette)
-══════════════════════════════════════════════════════ -->
+<!-- ══════════════════════════════════════════════
+     AUDIO PLAYER BAR (SoundAura-inspired)
+══════════════════════════════════════════════ -->
 <div id="bottom-player" role="region" aria-label="Audio player">
 
   <!-- Seek row -->
@@ -158,40 +178,43 @@
 
   <!-- Controls row -->
   <div class="player-controls-row">
-    <!-- Thumbnail -->
+
     <img id="player-thumb" src="" alt="Now playing">
 
-    <!-- Info -->
     <div class="player-info">
       <div id="player-title">—</div>
       <div id="player-speaker">—</div>
     </div>
 
-    <!-- Transport -->
     <div class="player-transport">
       <button class="btn-skip" id="btn-skip-back" title="−10 seconds">−10</button>
 
       <button class="btn-prev-next" id="btn-prev" title="Previous" aria-label="Previous">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
-          <polygon points="19,20 9,12 19,4"/><line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2"/>
+          <polygon points="19,20 9,12 19,4"/>
+          <line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2"/>
         </svg>
       </button>
 
       <button id="btn-play-pause" title="Play / Pause" aria-label="Play or pause">
-        <!-- Icon set by JS -->
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <polygon points="5,3 19,12 5,21"/>
+        </svg>
       </button>
 
       <button class="btn-prev-next" id="btn-next" title="Next" aria-label="Next">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
-          <polygon points="5,4 15,12 5,20"/><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"/>
+          <polygon points="5,4 15,12 5,20"/>
+          <line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"/>
         </svg>
       </button>
 
       <button class="btn-skip" id="btn-skip-fwd" title="+10 seconds">+10</button>
     </div>
 
-    <!-- Volume -->
+    <!-- Speed button ① -->
+    <button id="btn-speed" title="Playback speed" aria-label="Playback speed">1×</button>
+
     <div class="player-vol">
       <button class="btn-vol-icon" id="btn-vol-mute" title="Mute" aria-label="Mute">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -202,56 +225,75 @@
       <input type="range" id="player-volume" min="0" max="100" value="85" aria-label="Volume">
     </div>
 
-    <!-- Download -->
     <a id="player-download" href="#" title="Download" aria-label="Download">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-        <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
       </svg>
     </a>
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════
-     HIDDEN AUDIO ELEMENTS
-══════════════════════════════════════════════════════ -->
+<!-- ══════════════════════════════════════════════
+     SPEED PANEL ①
+     Positioned above player via CSS (bottom: calc(var(--player-h) + 10px))
+══════════════════════════════════════════════ -->
+<div id="speed-panel" role="dialog" aria-label="Playback speed">
+  <div class="speed-panel-label">Playback Speed</div>
+  <div class="speed-current" id="speed-current">1×</div>
+  <input type="range" id="speed-slider" min="0.5" max="2" step="0.05" value="1" aria-label="Speed slider">
+  <div class="speed-ticks">
+    <span class="speed-tick">0.5×</span>
+    <span class="speed-tick">1×</span>
+    <span class="speed-tick">1.5×</span>
+    <span class="speed-tick">2×</span>
+  </div>
+  <div class="speed-presets">
+    <button class="speed-preset" data-rate="0.75">0.75×</button>
+    <button class="speed-preset selected" data-rate="1">1×</button>
+    <button class="speed-preset" data-rate="1.25">1.25×</button>
+    <button class="speed-preset" data-rate="1.5">1.5×</button>
+    <button class="speed-preset" data-rate="1.75">1.75×</button>
+  </div>
+</div>
+
+<!-- Hidden audio elements -->
 <audio id="main-audio"    preload="metadata" style="display:none;"></audio>
 <audio id="ambient-audio" preload="none" loop style="display:none;"></audio>
 
-<!-- ══════════════════════════════════════════════════════
+<!-- ══════════════════════════════════════════════
      DRAGGABLE AMBIENT WIDGET
-══════════════════════════════════════════════════════ -->
+══════════════════════════════════════════════ -->
 <div id="ambient-widget" role="region" aria-label="Ambient player">
-
   <div class="aw-header">
     <div class="aw-drag-dots">
       <span></span><span></span><span></span>
       <span></span><span></span><span></span>
     </div>
-    <span class="aw-label">Ambient</span>
-    <button class="aw-close" id="aw-close" aria-label="Hide widget">✕</button>
+    <span class="aw-label">अनुभूति</span>
+    <button class="aw-close" id="aw-close" aria-label="Hide">✕</button>
   </div>
-
   <div class="aw-thumb" id="aw-thumb">
     <div class="aw-thumb-empty">〰</div>
   </div>
-
   <div class="aw-info">
     <div class="aw-title" id="aw-title">—</div>
   </div>
-
   <div class="aw-controls">
     <button class="aw-play-btn" id="aw-play-btn" aria-label="Play or pause ambient">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
+        <polygon points="5,3 19,12 5,21"/>
+      </svg>
     </button>
     <input type="range" class="aw-volume" id="aw-volume" min="0" max="100" value="30" aria-label="Ambient volume">
     <button class="aw-stop" id="aw-stop">■</button>
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════
+<!-- ══════════════════════════════════════════════
      PDF READER MODAL
-══════════════════════════════════════════════════════ -->
+══════════════════════════════════════════════ -->
 <div id="pdf-modal" role="dialog" aria-modal="true" aria-label="PDF reader">
   <div class="pdf-modal-header">
     <div>
@@ -272,9 +314,9 @@
   <iframe id="pdf-iframe" title="PDF Viewer" allow="fullscreen"></iframe>
 </div>
 
-<!-- ══════════════════════════════════════════════════════
+<!-- ══════════════════════════════════════════════
      IMAGE LIGHTBOX
-══════════════════════════════════════════════════════ -->
+══════════════════════════════════════════════ -->
 <div id="lightbox" role="dialog" aria-modal="true" aria-label="Image viewer">
   <button id="lightbox-close" aria-label="Close">✕</button>
   <img id="lightbox-img" src="" alt="">
@@ -284,9 +326,9 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════
-     VIDEO MODAL — #modal-video has aspect-ratio:16/9 in CSS
-══════════════════════════════════════════════════════ -->
+<!-- ══════════════════════════════════════════════
+     VIDEO MODAL
+══════════════════════════════════════════════ -->
 <div id="video-modal" role="dialog" aria-modal="true" aria-label="Video player">
   <div class="video-modal-inner">
     <button class="video-modal-close" aria-label="Close video">✕ Close</button>
@@ -294,9 +336,9 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════
+<!-- ══════════════════════════════════════════════
      TXT READER
-══════════════════════════════════════════════════════ -->
+══════════════════════════════════════════════ -->
 <div id="txt-reader" role="dialog" aria-modal="true" aria-label="Text reader">
   <div class="reader-header">
     <div class="reader-title-block">
@@ -313,9 +355,9 @@
   <button id="reader-close" style="display:none;" aria-hidden="true"></button>
 </div>
 
-<!-- ══════════════════════════════════════════════════════
-     ABOUT MODAL  ⑧
-══════════════════════════════════════════════════════ -->
+<!-- ══════════════════════════════════════════════
+     ABOUT MODAL
+══════════════════════════════════════════════ -->
 <div id="about-modal" role="dialog" aria-modal="true" aria-label="About ShunyaSpace">
   <div class="about-inner">
     <button class="about-close" id="about-close" aria-label="Close">✕</button>

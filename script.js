@@ -1,32 +1,30 @@
 /* ═══════════════════════════════════════════════════════════
-   ShunyaSpace — script.js  (v5)
+   ShunyaSpace — script.js  (v6)
 
-   NEW IN v5:
-   ① SoundAura-inspired audio player with SVG icons + skip ±10s
-   ② Draggable floating ambient mini-widget
-   ③ Video 16:9 aspect ratio enforced
-   ④ PDF in-page modal with scroll-progress saving
-   ⑤ TXT reader with scroll-progress saving + % complete
-   ⑥ Home "Continue where left off" with % progress bars
-   ⑦ Tiro Devanagari Hindi font for शून्य (via CSS)
-   ⑧ Logo click → About modal
-   ⑨ URL encoding for filenames with spaces
-   ⑩ Audio resume via loadedmetadata event
+   NEW IN v6:
+   ① Playback speed panel (0.5x–2x, smooth slider + presets)
+   ② Audio plays once — no auto-next
+   ③ Mobile sidebar overlay: click outside → closes
+   ④ Quote fade-transition on click (full rotation)
+   ⑤ Content protection: right-click, drag, context menu disabled
+   ⑥ Hindi section names in FALLBACK_NAV + section headers
+   ⑦ Logo breathing animation (CSS-driven, no JS needed)
+   ⑧ Resume video currentTime (video save/restore)
 ═══════════════════════════════════════════════════════════ */
 
 'use strict';
 
 /* ═══════════════════════════════════════════════════════════
-   FALLBACK NAV
+   FALLBACK NAV — Hindi names ⑥
 ═══════════════════════════════════════════════════════════ */
 const FALLBACK_NAV = [
-  { id:'home',    label:'Pravaah', icon:'◌',  hint:'The flow' },
-  { id:'audios',  label:'Shravan',  icon:'◑',  hint:'What is heard' },
-  { id:'ambient', label:'Ambient',  icon:'〰', hint:'Surrounding sound' },
-  { id:'videos',  label:'Videos',   icon:'▷',  hint:'Moving light' },
-  { id:'echo',    label:'Echo',     icon:'∿',  hint:'Words that remain' },
-  { id:'images',  label:'Drishya',  icon:'◎',  hint:'What is seen' },
-  { id:'books',   label:'Books',    icon:'⊟',  hint:'Deeper waters' },
+  { id:'home',    label:'Pravaah',      icon:'◌',  hint:'प्रवाह · The flow' },
+  { id:'audios',  label:'श्रवण',        icon:'◑',  hint:'Shravan · What is heard' },
+  { id:'ambient', label:'अनुभूति',      icon:'〰', hint:'Anubhuti · Surrounding sound' },
+  { id:'videos',  label:'दृश्य',        icon:'▷',  hint:'Drishya · Moving light' },
+  { id:'echo',    label:'प्रतिध्वनि',   icon:'∿',  hint:'Pratidhwani · Words that remain' },
+  { id:'images',  label:'Drishya',      icon:'◎',  hint:'दृश्य · What is seen' },
+  { id:'books',   label:'ग्रंथ',        icon:'⊟',  hint:'Granth · Deeper waters' },
 ];
 
 /* ═══════════════════════════════════════════════════════════
@@ -45,13 +43,17 @@ const State = {
   audio: {
     currentId:null, isPlaying:false,
     list:[], currentIndex:-1,
-    volume:0.85,
+    volume:0.85, speed:1,
   },
   ambient: {
     currentId:null, isPlaying:false,
     volume:0.3,
   },
   pdf: { currentItem:null },
+
+  // All quotes for rotation
+  quoteList: [],
+  quoteIndex: 0,
 };
 
 /* ═══════════════════════════════════════════════════════════
@@ -81,6 +83,10 @@ function cacheDom() {
   DOM.timeRemain   = document.getElementById('time-remain');
   DOM.volSlider    = document.getElementById('player-volume');
   DOM.dlBtn        = document.getElementById('player-download');
+  DOM.speedBtn     = document.getElementById('btn-speed');
+  DOM.speedPanel   = document.getElementById('speed-panel');
+  DOM.speedSlider  = document.getElementById('speed-slider');
+  DOM.speedCurrent = document.getElementById('speed-current');
 
   // Ambient widget
   DOM.ambWidget    = document.getElementById('ambient-widget');
@@ -100,35 +106,37 @@ function cacheDom() {
   DOM.txtReader    = document.getElementById('txt-reader');
   DOM.readerContent= document.getElementById('reader-content');
   DOM.sidebar      = document.getElementById('sidebar');
+  DOM.sidebarOverlay = document.getElementById('sidebar-overlay');
   DOM.pdfModal     = document.getElementById('pdf-modal');
   DOM.pdfIframe    = document.getElementById('pdf-iframe');
   DOM.aboutModal   = document.getElementById('about-modal');
 }
 
 /* ═══════════════════════════════════════════════════════════
-   LOCAL STORAGE — progress tracking
+   LOCAL STORAGE
 ═══════════════════════════════════════════════════════════ */
 const Store = {
   get:  k    => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
   set:  (k,v)=> { try { localStorage.setItem(k,JSON.stringify(v)); } catch {} },
 
-  // Audio
   saveAudioTime:   (id,t)  => Store.set(`audio_${id}`,t),
   getAudioTime:    id      => Store.get(`audio_${id}`) || 0,
   saveAudioDur:    (id,d)  => Store.set(`audiodur_${id}`,d),
   getAudioDur:     id      => Store.get(`audiodur_${id}`) || 0,
 
-  // TXT
   saveTxtScroll:   (id,p)  => Store.set(`txt_${id}`,p),
   getTxtScroll:    id      => Store.get(`txt_${id}`) || 0,
   saveTxtHeight:   (id,h)  => Store.set(`txth_${id}`,h),
   getTxtHeight:    id      => Store.get(`txth_${id}`) || 1,
 
-  // PDF
   savePdfPage:     (id,p)  => Store.set(`pdf_progress_${id}`,p),
   getPdfPage:      id      => Store.get(`pdf_progress_${id}`) || 1,
 
-  // Last opened
+  saveVideoTime:   (id,t)  => Store.set(`video_${id}`,t),
+  getVideoTime:    id      => Store.get(`video_${id}`) || 0,
+  saveVideoDur:    (id,d)  => Store.set(`videodur_${id}`,d),
+  getVideoDur:     id      => Store.get(`videodur_${id}`) || 0,
+
   saveLastAudio:   id      => Store.set('last_audio',id),
   getLastAudio:    ()      => Store.get('last_audio'),
   saveLastEcho:    id      => Store.set('last_echo',id),
@@ -142,13 +150,11 @@ const Store = {
 };
 
 /* ═══════════════════════════════════════════════════════════
-   URL BUILDER — ⑨ encodes each path segment
-   Handles filenames with spaces, parentheses, Unicode
+   URL BUILDER
 ═══════════════════════════════════════════════════════════ */
 function buildUrl(base, filePath) {
   if (!filePath) return '';
-  const encoded = filePath.split('/').map(seg => encodeURIComponent(seg)).join('/');
-  return base + encoded;
+  return base + filePath.split('/').map(s => encodeURIComponent(s)).join('/');
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -221,11 +227,17 @@ async function loadAllData() {
   State.data.echo    = parseEcho(eR);
   State.data.images  = parseImages(iR);
   State.audio.list   = State.data.audios;
-  console.log('[Shunya] Loaded', {
-    audios:State.data.audios.length, ambient:State.data.ambient.length,
-    videos:State.data.videos.length, books:State.data.books.length,
-    echo:State.data.echo.all.length, images:State.data.images.length,
-  });
+
+  // Store all quotes for rotation
+  const quotes = State.data.home?.quotes || [];
+  State.quoteList = quotes.length ? quotes : [
+    {text:'The quieter you become, the more you can hear.', author:'Ram Dass'},
+    {text:'Emptiness is not a void. It is the ground of being.', author:'Krishnamurti'},
+    {text:'You are not a drop in the ocean. You are the entire ocean in a drop.', author:'Rumi'},
+    {text:'What you are looking for is what is looking.', author:'Francis of Assisi'},
+    {text:'Silence is not the absence of sound but the presence of everything.', author:'Unknown'},
+  ];
+  State.quoteIndex = Math.floor(Math.random() * State.quoteList.length);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -246,7 +258,7 @@ function initNav() {
     l.addEventListener('click', e => {
       e.preventDefault();
       navigateTo(l.dataset.section);
-      DOM.sidebar.classList.remove('open');
+      closeSidebar();
     })
   );
 }
@@ -283,12 +295,10 @@ function buildCard(item, {badge='',delay=0,extraClass=''} = {}) {
   const thumb = item.thumbnailUrl
     ? `<img data-src="${item.thumbnailUrl}" alt="" loading="lazy">`
     : `<div class="card-thumb-placeholder">${badge||'◌'}</div>`;
-
   const progressBar = progress > 0 ? `
     <div class="card-progress-bar">
       <div class="card-progress-fill" style="width:${progress}%"></div>
     </div>` : '';
-
   return `
     <div class="content-card animate-in ${extraClass}" data-id="${item.id}" style="animation-delay:${delay}s">
       <div class="card-thumb">${thumb}${progressBar}</div>
@@ -299,18 +309,19 @@ function buildCard(item, {badge='',delay=0,extraClass=''} = {}) {
     </div>`;
 }
 
-/** Returns 0–100 progress for a given item based on localStorage */
 function getItemProgress(item) {
   if (!item?.id) return 0;
   if (item.id.startsWith('audio_')) {
-    const t = Store.getAudioTime(item.id);
-    const d = Store.getAudioDur(item.id);
+    const t = Store.getAudioTime(item.id), d = Store.getAudioDur(item.id);
     return d > 0 ? Math.round((t/d)*100) : 0;
   }
   if (item.type === 'txt') {
-    const scroll = Store.getTxtScroll(item.id);
-    const height = Store.getTxtHeight(item.id);
-    return height > 0 ? Math.min(100, Math.round((scroll/height)*100)) : 0;
+    const s = Store.getTxtScroll(item.id), h = Store.getTxtHeight(item.id);
+    return h > 0 ? Math.min(100, Math.round((s/h)*100)) : 0;
+  }
+  if (item.id?.startsWith('vid_')) {
+    const t = Store.getVideoTime(item.id), d = Store.getVideoDur(item.id);
+    return d > 0 ? Math.round((t/d)*100) : 0;
   }
   return 0;
 }
@@ -333,13 +344,12 @@ function lazyLoad(container) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   HOME — ⑥ Resume cards with % progress
+   HOME — quote rotation on click ④
 ═══════════════════════════════════════════════════════════ */
 function renderHome() {
   const C = document.getElementById('home-inner');
   const {home, global} = State.data;
-  const quotes = home?.quotes || [];
-  const q = quotes[Math.floor(Math.random()*quotes.length)] || {
+  const q = State.quoteList[State.quoteIndex] || {
     text:'The quieter you become, the more you can hear.', author:'Ram Dass',
   };
 
@@ -347,24 +357,22 @@ function renderHome() {
   const lastEcho  = State.data.echo.all.find(e => e.id===Store.getLastEcho());
   const lastImg   = State.data.images.find(i => i.id===Store.getRecentImages()[0]);
 
-  function progressCard(item, action, type, label) {
+  function progressCard(item, action, type) {
     const pct = getItemProgress(item);
-    const pLabel = pct > 0 ? `${pct}% complete` : 'Start';
     return `
       <div class="resume-card animate-in" data-action="${action}" data-id="${item.id}">
         <div class="resume-card-type">${type}</div>
         <div class="resume-card-title">${item.title||item.file||'—'}</div>
-        ${item.thumbnailUrl ? '' : ''}
         <div class="resume-progress-wrap">
           <div class="resume-progress-fill" style="width:${pct}%"></div>
         </div>
-        <div class="resume-progress-label">${pLabel}</div>
+        <div class="resume-progress-label">${pct > 0 ? pct+'% complete' : 'Start'}</div>
       </div>`;
   }
 
   const cards = [
-    lastAudio ? progressCard(lastAudio,'resume-audio','↺ Continue Listening','Audio') : '',
-    lastEcho  ? progressCard(lastEcho, 'resume-echo', '↺ Continue Reading',  'Echo')  : '',
+    lastAudio ? progressCard(lastAudio,'resume-audio','↺ Continue Listening') : '',
+    lastEcho  ? progressCard(lastEcho, 'resume-echo', '↺ Continue Reading')   : '',
     lastImg   ? `<div class="resume-card animate-in" data-action="resume-image" data-id="${lastImg.id}">
       <div class="resume-card-type">◎ Recently Viewed</div>
       <div class="resume-card-title">${lastImg.file||'An image'}</div>
@@ -373,14 +381,14 @@ function renderHome() {
 
   C.innerHTML = `
     <div class="home-hero">
-      <div class="home-shunya-glyph">शून्य</div>
+      <div class="home-shunya-glyph" id="shunya-glyph" title="About ShunyaSpace" role="button">शून्य</div>
       <div class="home-welcome">${home?.welcome||'You have arrived.'}</div>
       <div class="home-tagline">${global?.site?.tagline||'A silence you can enter'}</div>
     </div>
 
-    <div class="home-quote-block animate-in">
-      <div class="quote-text">${q.text}</div>
-      <div class="quote-author">— ${q.author}</div>
+    <div class="home-quote-block animate-in" id="quote-block" title="Tap to change" role="button" tabindex="0">
+      <div class="quote-text" id="quote-text">${q.text}</div>
+      <div class="quote-author" id="quote-author">— ${q.author}</div>
     </div>
 
     ${cards ? `<div class="home-resume">
@@ -389,6 +397,28 @@ function renderHome() {
     </div>` : ''}
   `;
 
+  // Quote rotation — fade transition ④
+  const qBlock = document.getElementById('quote-block');
+  const qText  = document.getElementById('quote-text');
+  const qAuth  = document.getElementById('quote-author');
+
+  qBlock?.addEventListener('click', () => {
+    qText.classList.add('fading');
+    setTimeout(() => {
+      State.quoteIndex = (State.quoteIndex + 1) % State.quoteList.length;
+      const next = State.quoteList[State.quoteIndex];
+      qText.textContent = next.text;
+      qAuth.textContent = '— ' + next.author;
+      qText.classList.remove('fading');
+    }, 480);
+  });
+
+  // शून्य glyph also opens about modal
+  document.getElementById('shunya-glyph')?.addEventListener('click', () => {
+    DOM.aboutModal?.classList.add('open');
+  });
+
+  // Resume cards
   C.querySelectorAll('[data-action]').forEach(card => {
     card.addEventListener('click', () => {
       const {action,id} = card.dataset;
@@ -405,7 +435,7 @@ function renderHome() {
 function renderAudios() {
   const C = document.getElementById('audios-list');
   const audios = State.data.audios;
-  if (!audios.length) { C.innerHTML = emptyState('◑','No audios yet. Add .mp3 files to <code>shunya_data/audios/</code> and run <code>generate_json.py</code>'); return; }
+  if (!audios.length) { C.innerHTML = emptyState('◑','No audios. Add .mp3 files to <code>shunya_data/audios/</code> and run <code>generate_json.py</code>'); return; }
   C.innerHTML = `<div class="content-grid">${
     audios.map((a,i) => buildCard(a,{badge:'Audio',delay:i*.05,extraClass:State.audio.currentId===a.id?'is-active':''})).join('')
   }</div>`;
@@ -416,7 +446,7 @@ function renderAudios() {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   AUDIO ENGINE — ① SoundAura-inspired player
+   AUDIO ENGINE — ② plays once, no auto-next
 ═══════════════════════════════════════════════════════════ */
 function playAudioById(id) {
   const item = State.data.audios.find(a => a.id===id);
@@ -433,6 +463,7 @@ function playAudioById(id) {
   State.audio.currentIndex = State.data.audios.findIndex(a=>a.id===id);
   DOM.mainAudio.src         = item.url;
   DOM.mainAudio.volume      = State.audio.volume;
+  DOM.mainAudio.playbackRate = State.audio.speed;
 
   const savedTime = Store.getAudioTime(id);
   if (savedTime > 0) {
@@ -443,7 +474,7 @@ function playAudioById(id) {
 
   DOM.mainAudio.play()
     .then(() => { State.audio.isPlaying=true; showPlayerBar(item); refreshAudioUI(); })
-    .catch(e => { console.warn('[Shunya] Audio play failed:',item.url,e.message); showToast('Could not load audio. Check the URL.'); showPlayerBar(item); });
+    .catch(e => { console.warn('[Shunya] Audio fail:',item.url,e.message); showToast('Could not load audio. Check the URL.'); showPlayerBar(item); });
 }
 
 function toggleAudioPlayback() {
@@ -478,10 +509,12 @@ function bindAudioEvents() {
     if (DOM.mainAudio.duration) Store.saveAudioDur(State.audio.currentId, DOM.mainAudio.duration);
     updateSeek(DOM.mainAudio.currentTime, DOM.mainAudio.duration);
   });
+  // ② No auto-next — audio stops when done
   DOM.mainAudio.addEventListener('ended', () => {
-    State.audio.isPlaying = false; refreshAudioUI();
-    const next = State.audio.currentIndex+1;
-    if (next < State.audio.list.length) playAudioById(State.audio.list[next].id);
+    State.audio.isPlaying = false;
+    refreshAudioUI();
+    // Reset saved time so it starts fresh next time
+    if (State.audio.currentId) Store.saveAudioTime(State.audio.currentId, 0);
   });
   DOM.mainAudio.addEventListener('play',  () => { State.audio.isPlaying=true;  refreshAudioUI(); });
   DOM.mainAudio.addEventListener('pause', () => { State.audio.isPlaying=false; refreshAudioUI(); });
@@ -491,8 +524,8 @@ function bindAudioEvents() {
 function updateSeek(current, duration) {
   if (!duration || isNaN(duration)) return;
   const pct = (current/duration)*100;
-  if (DOM.seekFill) DOM.seekFill.style.width = pct+'%';
-  if (DOM.seekThumb) DOM.seekThumb.style.left = pct+'%';
+  if (DOM.seekFill)    DOM.seekFill.style.width = pct+'%';
+  if (DOM.seekThumb)   DOM.seekThumb.style.left = pct+'%';
   if (DOM.timeElapsed) DOM.timeElapsed.textContent = fmt(current);
   if (DOM.timeRemain)  DOM.timeRemain.textContent  = '-'+fmt(duration-current);
 }
@@ -503,16 +536,65 @@ function fmt(s) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   PLAYER BAR INIT
+   PLAYER BAR + SPEED PANEL ①
 ═══════════════════════════════════════════════════════════ */
 function showPlayerBar(item) {
   DOM.playerBar.classList.add('visible');
   DOM.playerTitle.textContent          = item.title||item.file||'—';
-  DOM.playerSub.textContent            = item.speaker || item.author || '';
+  DOM.playerSub.textContent            = item.speaker||item.author||'';
   DOM.playerThumb.src                  = item.thumbnailUrl||'';
   DOM.playerThumb.style.display        = item.thumbnailUrl ? 'block' : 'none';
   DOM.dlBtn.href                       = item.url||'#';
   DOM.dlBtn.setAttribute('download',   item.file||'');
+  // Reflect current speed in button
+  if (DOM.speedBtn) DOM.speedBtn.textContent = State.audio.speed+'×';
+}
+
+function setSpeed(rate) {
+  State.audio.speed = rate;
+  DOM.mainAudio.playbackRate = rate;
+  if (DOM.speedBtn)     DOM.speedBtn.textContent = rate+'×';
+  if (DOM.speedCurrent) DOM.speedCurrent.textContent = rate+'×';
+  if (DOM.speedSlider)  DOM.speedSlider.value = rate;
+  // Update selected preset buttons
+  document.querySelectorAll('.speed-preset').forEach(b =>
+    b.classList.toggle('selected', parseFloat(b.dataset.rate) === rate)
+  );
+}
+
+function initSpeedPanel() {
+  if (!DOM.speedBtn) return;
+
+  // Toggle panel open/close
+  DOM.speedBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    DOM.speedPanel?.classList.toggle('open');
+    DOM.speedBtn.classList.toggle('active', DOM.speedPanel?.classList.contains('open'));
+  });
+
+  // Close when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!DOM.speedPanel?.contains(e.target) && e.target !== DOM.speedBtn) {
+      DOM.speedPanel?.classList.remove('open');
+      DOM.speedBtn?.classList.remove('active');
+    }
+  });
+
+  // Slider input
+  DOM.speedSlider?.addEventListener('input', () => {
+    const rate = parseFloat(parseFloat(DOM.speedSlider.value).toFixed(2));
+    setSpeed(rate);
+  });
+
+  // Preset buttons
+  document.querySelectorAll('.speed-preset').forEach(btn => {
+    btn.addEventListener('click', () => {
+      setSpeed(parseFloat(btn.dataset.rate));
+    });
+  });
+
+  // Init UI to current speed
+  setSpeed(State.audio.speed);
 }
 
 function initPlayerBar() {
@@ -520,7 +602,7 @@ function initPlayerBar() {
 
   DOM.prevBtn?.addEventListener('click', () => {
     const i = State.audio.currentIndex;
-    if (i>0) playAudioById(State.audio.list[i-1].id);
+    if (i > 0) playAudioById(State.audio.list[i-1].id);
   });
   DOM.nextBtn?.addEventListener('click', () => {
     const i = State.audio.currentIndex;
@@ -547,34 +629,42 @@ function initPlayerBar() {
   if (DOM.volSlider) DOM.volSlider.value = State.audio.volume*100;
   DOM.mainAudio.volume = State.audio.volume;
 
-  // Space bar shortcut
-  document.addEventListener('keydown', e => {
-    if (e.code==='Space' && !['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)) {
-      e.preventDefault();
-      if (DOM.mainAudio.src) toggleAudioPlayback();
-    }
-    if (e.key==='ArrowRight' && DOM.mainAudio.src) {
-      e.preventDefault();
-      DOM.mainAudio.currentTime = Math.min(DOM.mainAudio.duration||0, DOM.mainAudio.currentTime+10);
-    }
-    if (e.key==='ArrowLeft' && DOM.mainAudio.src) {
-      e.preventDefault();
-      DOM.mainAudio.currentTime = Math.max(0, DOM.mainAudio.currentTime-10);
+  // Mute toggle
+  let muteVol = State.audio.volume;
+  document.getElementById('btn-vol-mute')?.addEventListener('click', () => {
+    if (DOM.mainAudio.volume > 0) {
+      muteVol = DOM.mainAudio.volume;
+      DOM.mainAudio.volume = 0;
+      if (DOM.volSlider) DOM.volSlider.value = 0;
+    } else {
+      DOM.mainAudio.volume = muteVol;
+      State.audio.volume = muteVol;
+      if (DOM.volSlider) DOM.volSlider.value = muteVol * 100;
     }
   });
 
+  // Keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    const tag = document.activeElement?.tagName;
+    if (['INPUT','TEXTAREA'].includes(tag)) return;
+    if (e.code==='Space')      { e.preventDefault(); if (DOM.mainAudio.src) toggleAudioPlayback(); }
+    if (e.key==='ArrowRight')  { e.preventDefault(); if (DOM.mainAudio.src) DOM.mainAudio.currentTime = Math.min(DOM.mainAudio.duration||0, DOM.mainAudio.currentTime+10); }
+    if (e.key==='ArrowLeft')   { e.preventDefault(); if (DOM.mainAudio.src) DOM.mainAudio.currentTime = Math.max(0, DOM.mainAudio.currentTime-10); }
+  });
+
   updatePlayIcon();
+  initSpeedPanel();
 }
 
 /* ═══════════════════════════════════════════════════════════
-   VIDEOS — ③ 16:9 aspect ratio enforced via CSS class
+   VIDEOS — save/restore currentTime ⑧
 ═══════════════════════════════════════════════════════════ */
 function renderVideos() {
   const C = document.getElementById('videos-grid');
   const videos = State.data.videos;
-  if (!videos.length) { C.innerHTML = emptyState('▷','No videos yet. Add files to <code>shunya_data/videos/</code> and run <code>generate_json.py</code>'); return; }
+  if (!videos.length) { C.innerHTML = emptyState('▷','No videos. Add files to <code>shunya_data/videos/</code> and run <code>generate_json.py</code>'); return; }
   C.innerHTML = `<div class="content-grid">${
-    videos.map((v,i) => buildCard(v,{badge:'▷',delay:i*.06})).join('')
+    videos.map((v,i) => buildCard(v,{badge:'दृश्य',delay:i*.06})).join('')
   }</div>`;
   lazyLoad(C);
   C.querySelectorAll('.content-card').forEach(card => {
@@ -588,28 +678,48 @@ function renderVideos() {
 function openVideoModal(item) {
   DOM.modalVideo.src = item.url;
   DOM.videoModal.classList.add('open');
+
+  // Restore saved position
+  const savedTime = Store.getVideoTime(item.id);
+  if (savedTime > 0) {
+    DOM.modalVideo.addEventListener('loadedmetadata', () => {
+      DOM.modalVideo.currentTime = savedTime;
+    }, {once:true});
+  }
+
+  // Save progress during playback
+  DOM.modalVideo._saveInterval = setInterval(() => {
+    if (DOM.modalVideo.currentTime > 0) {
+      Store.saveVideoTime(item.id, DOM.modalVideo.currentTime);
+      Store.saveVideoDur(item.id, DOM.modalVideo.duration||0);
+    }
+  }, 2000);
+
   DOM.modalVideo.play().catch(e => {
-    console.warn('[Shunya] Video play failed:',item.url,e.message);
+    console.warn('[Shunya] Video fail:',item.url,e.message);
     showToast('Could not load video. Check the URL.');
   });
 }
+
 function closeVideoModal() {
+  clearInterval(DOM.modalVideo._saveInterval);
   DOM.videoModal.classList.remove('open');
   DOM.modalVideo.pause();
   DOM.modalVideo.removeAttribute('src');
 }
+
 function initVideoModal() {
   document.querySelector('.video-modal-close')?.addEventListener('click', closeVideoModal);
   DOM.videoModal?.addEventListener('click', e => { if(e.target===DOM.videoModal) closeVideoModal(); });
 }
 
 /* ═══════════════════════════════════════════════════════════
-   ECHO — cards → TXT reader or PDF modal
+   ECHO
 ═══════════════════════════════════════════════════════════ */
 function renderEcho() {
   const C = document.getElementById('echo-grid');
   const all = State.data.echo.all;
-  if (!all.length) { C.innerHTML = emptyState('∿','No writings yet. Add files to <code>shunya/echo/</code> and run <code>generate_json.py</code>'); return; }
+  if (!all.length) { C.innerHTML = emptyState('∿','No writings. Add files to <code>shunya/echo/</code> and run <code>generate_json.py</code>'); return; }
   C.innerHTML = all.map((item,i) => buildCard(item,{badge:item.type==='pdf'?'PDF':'TXT',delay:i*.06,extraClass:`echo-${item.type}`})).join('');
   lazyLoad(C);
   C.querySelectorAll('.content-card').forEach(card =>
@@ -624,10 +734,9 @@ function openEchoById(id) {
   item.type==='pdf' ? openPdfModal(item) : openTxtReader(item);
 }
 
-/* TXT reader — ⑤ scroll progress saved */
 async function openTxtReader(item) {
   document.getElementById('reader-doc-title').textContent = item.title||item.file||'—';
-  document.getElementById('reader-eyebrow').textContent   = 'Echo · Writing';
+  document.getElementById('reader-eyebrow').textContent   = 'प्रतिध्वनि · Echo';
   DOM.readerContent.textContent = 'Loading…';
   DOM.txtReader.classList.add('open');
   const wrap = document.querySelector('.reader-content-wrap');
@@ -635,24 +744,18 @@ async function openTxtReader(item) {
   try {
     const r = await fetch(item.url);
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const text = await r.text();
-    DOM.readerContent.textContent = text;
-    // Restore scroll
-    setTimeout(() => {
-      wrap.scrollTop = Store.getTxtScroll(item.id);
-    }, 80);
+    DOM.readerContent.textContent = await r.text();
+    setTimeout(() => { wrap.scrollTop = Store.getTxtScroll(item.id); }, 80);
   } catch(e) {
-    console.warn('[Shunya] TXT fetch failed:',item.url,e.message);
+    console.warn('[Shunya] TXT fail:',item.url,e.message);
     DOM.readerContent.textContent =
-      `${item.title||''}\n\n[Could not load: ${item.url}]\n\nRun from a web server, not file://`;
+      `${item.title||''}\n\n[Could not load: ${item.url}]\n\nRun from a local web server, not file://`;
   }
 
-  // Save scroll + height on scroll
-  const saveScroll = () => {
+  wrap.addEventListener('scroll', () => {
     Store.saveTxtScroll(item.id, wrap.scrollTop);
     Store.saveTxtHeight(item.id, wrap.scrollHeight - wrap.clientHeight);
-  };
-  wrap.addEventListener('scroll', saveScroll, {passive:true});
+  }, {passive:true});
 }
 
 function initTxtReader() {
@@ -662,7 +765,7 @@ function initTxtReader() {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   PDF MODAL — ④ in-page reader + progress saving
+   PDF MODAL
 ═══════════════════════════════════════════════════════════ */
 function openPdfModal(item) {
   State.pdf.currentItem = item;
@@ -687,8 +790,8 @@ function closePdfModal() {
 }
 
 function goToPdfPage(p) {
-  if (!State.pdf.currentItem||!p) return;
-  const page = Math.max(1,parseInt(p)||1);
+  if (!State.pdf.currentItem) return;
+  const page = Math.max(1, parseInt(p)||1);
   document.getElementById('pdf-page-num').value = page;
   DOM.pdfIframe.src = State.pdf.currentItem.url + `#page=${page}`;
 }
@@ -708,12 +811,12 @@ function initPdfModal() {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   IMAGES — lightbox
+   IMAGES
 ═══════════════════════════════════════════════════════════ */
 function renderImages() {
   const C = document.getElementById('images-grid');
   const imgs = State.data.images;
-  if (!imgs.length) { C.innerHTML = emptyState('◎','No images yet. Add files to <code>shunya/images/</code> and run <code>generate_json.py</code>'); return; }
+  if (!imgs.length) { C.innerHTML = emptyState('◎','No images. Add files to <code>shunya/images/</code> and run <code>generate_json.py</code>'); return; }
   C.innerHTML = imgs.map((img,i) => `
     <div class="image-card animate-in" data-id="${img.id}" style="animation-delay:${i*.04}s">
       <img data-src="${img.url}" alt="" loading="lazy">
@@ -752,8 +855,8 @@ function initLightbox() {
 function renderBooks() {
   const C = document.getElementById('books-grid');
   const books = State.data.books;
-  if (!books.length) { C.innerHTML = emptyState('⊟','No books yet. Add PDFs to <code>shunya/books/pdfs/</code> and run <code>generate_json.py</code>'); return; }
-  C.innerHTML = `<div class="content-grid">${books.map((b,i) => buildCard(b,{badge:'PDF',delay:i*.06})).join('')}</div>`;
+  if (!books.length) { C.innerHTML = emptyState('⊟','No books. Add PDFs to <code>shunya/books/pdfs/</code> and run <code>generate_json.py</code>'); return; }
+  C.innerHTML = `<div class="content-grid">${books.map((b,i) => buildCard(b,{badge:'ग्रंथ',delay:i*.06})).join('')}</div>`;
   lazyLoad(C);
   C.querySelectorAll('.content-card').forEach(card => {
     const item = books.find(b=>b.id===card.dataset.id);
@@ -768,19 +871,14 @@ function renderBooks() {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   AMBIENT — grid + draggable widget  ② 
+   AMBIENT
 ═══════════════════════════════════════════════════════════ */
 function renderAmbient() {
   const grid  = document.getElementById('ambient-grid');
   const items = State.data.ambient;
-
-  if (!items.length) {
-    grid.innerHTML = emptyState('〰','No ambient sounds found. Add .mp3 or .mp4 files to <code>shunya_data/ambient/</code> and run <code>generate_json.py</code>');
-    return;
-  }
+  if (!items.length) { grid.innerHTML = emptyState('〰','No ambient sounds. Add files to <code>shunya_data/ambient/</code> and run <code>generate_json.py</code>'); return; }
 
   const active = items.find(a=>a.id===State.ambient.currentId);
-
   grid.innerHTML = `
     ${active ? `
       <div class="ambient-now-playing animate-in">
@@ -788,16 +886,14 @@ function renderAmbient() {
           ? `<div class="ambient-np-thumb" style="background-image:url('${active.thumbnailUrl}')"></div>`
           : `<div class="ambient-np-thumb ambient-np-thumb--empty">〰</div>`}
         <div class="ambient-np-info">
-          <div class="ambient-np-label">Now playing</div>
+          <div class="ambient-np-label">अनुभूति · Now playing</div>
           <div class="ambient-np-title">${active.title}</div>
         </div>
         <div class="ambient-np-controls">
-          <input type="range" class="ambient-vol-slider" min="0" max="100"
-            value="${Math.round(State.ambient.volume*100)}">
+          <input type="range" class="ambient-vol-slider" min="0" max="100" value="${Math.round(State.ambient.volume*100)}">
           <button class="ambient-stop-btn">■ Stop</button>
         </div>
       </div>` : ''}
-
     <div class="ambient-cards-grid">
       ${items.map((a,i) => {
         const on = State.ambient.currentId===a.id && State.ambient.isPlaying;
@@ -842,7 +938,7 @@ function toggleAmbient(id) {
       State.rendered.delete('ambient');
       renderAmbient();
     })
-    .catch(e => { console.warn('[Shunya] Ambient failed:',item.url,e.message); showToast('Could not load ambient sound.'); });
+    .catch(e => { console.warn('[Shunya] Ambient fail:',item.url,e.message); showToast('Could not load ambient sound.'); });
 }
 
 function stopAmbient() {
@@ -862,33 +958,19 @@ function updateAmbientMiniSidebar(item) {
   else       { mini.classList.remove('active'); el.textContent = 'No ambient'; }
 }
 
-function initAmbientControls() {
-  document.getElementById('ambient-volume')?.addEventListener('input', function() {
-    State.ambient.volume = this.value/100;
-    DOM.ambientAudio.volume = State.ambient.volume;
-  });
-  document.querySelector('.ambient-mini-stop')?.addEventListener('click', () => {
-    stopAmbient(); State.rendered.delete('ambient'); renderAmbient();
-  });
-}
-
-/* ── Draggable ambient widget ── */
 function showAmbientWidget(item) {
   if (!DOM.ambWidget) return;
   DOM.ambWidget.classList.add('visible');
   if (DOM.awTitle) DOM.awTitle.textContent = item.title||'—';
   if (DOM.awThumb) {
-    if (item.thumbnailUrl) {
-      DOM.awThumb.innerHTML = `<img src="${item.thumbnailUrl}" alt="${item.title}" style="width:100%;height:100%;object-fit:cover;">`;
-    } else {
-      DOM.awThumb.innerHTML = '<div class="aw-thumb-empty">〰</div>';
-    }
+    DOM.awThumb.innerHTML = item.thumbnailUrl
+      ? `<img src="${item.thumbnailUrl}" alt="${item.title}" style="width:100%;height:100%;object-fit:cover;">`
+      : '<div class="aw-thumb-empty">〰</div>';
   }
   updateWidgetPlayIcon();
 }
-function hideAmbientWidget() {
-  DOM.ambWidget?.classList.remove('visible');
-}
+
+function hideAmbientWidget() { DOM.ambWidget?.classList.remove('visible'); }
 
 function updateWidgetPlayIcon() {
   if (!DOM.awPlayBtn) return;
@@ -897,94 +979,79 @@ function updateWidgetPlayIcon() {
     : `<svg width="14" height="14" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>`;
 }
 
+function initAmbientControls() {
+  document.getElementById('ambient-volume')?.addEventListener('input', function() {
+    State.ambient.volume = this.value/100;
+    DOM.ambientAudio.volume = State.ambient.volume;
+  });
+  document.querySelector('.ambient-mini-stop')?.addEventListener('click', () => {
+    stopAmbient(); State.rendered.delete('ambient'); renderAmbient();
+  });
+  DOM.ambientAudio?.addEventListener('error', () => showToast('Ambient audio error.'));
+}
+
 function initAmbientWidget() {
   if (!DOM.ambWidget) return;
 
-  // Play/pause
   DOM.awPlayBtn?.addEventListener('click', e => {
     e.stopPropagation();
     if (!State.ambient.currentId) return;
     if (State.ambient.isPlaying) {
-      DOM.ambientAudio.pause();
-      State.ambient.isPlaying = false;
+      DOM.ambientAudio.pause(); State.ambient.isPlaying = false;
     } else {
-      DOM.ambientAudio.play().catch(()=>{});
-      State.ambient.isPlaying = true;
+      DOM.ambientAudio.play().catch(()=>{}); State.ambient.isPlaying = true;
     }
     updateWidgetPlayIcon();
-    State.rendered.delete('ambient');
-    renderAmbient();
+    State.rendered.delete('ambient'); renderAmbient();
   });
 
-  // Volume
   DOM.awVolume?.addEventListener('input', function() {
     State.ambient.volume = this.value/100;
     DOM.ambientAudio.volume = State.ambient.volume;
   });
   if (DOM.awVolume) DOM.awVolume.value = State.ambient.volume*100;
 
-  // Stop
   document.getElementById('aw-stop')?.addEventListener('click', e => {
-    e.stopPropagation();
-    stopAmbient();
-    State.rendered.delete('ambient');
-    renderAmbient();
+    e.stopPropagation(); stopAmbient(); State.rendered.delete('ambient'); renderAmbient();
   });
-
-  // Close
   document.getElementById('aw-close')?.addEventListener('click', e => {
-    e.stopPropagation();
-    hideAmbientWidget();
+    e.stopPropagation(); hideAmbientWidget();
   });
 
   // Draggable
-  let dragging = false, ox=0, oy=0;
+  let dragging=false, ox=0, oy=0;
   const handle = DOM.ambWidget.querySelector('.aw-header') || DOM.ambWidget;
 
   handle.addEventListener('mousedown', e => {
     if (e.target.closest('button,input')) return;
-    dragging = true;
-    DOM.ambWidget.classList.add('grabbing');
+    dragging=true; DOM.ambWidget.classList.add('grabbing');
     const r = DOM.ambWidget.getBoundingClientRect();
-    ox = e.clientX - r.left;
-    oy = e.clientY - r.top;
-    e.preventDefault();
+    ox=e.clientX-r.left; oy=e.clientY-r.top; e.preventDefault();
   });
   document.addEventListener('mousemove', e => {
     if (!dragging) return;
-    let x = e.clientX - ox;
-    let y = e.clientY - oy;
-    x = Math.max(0, Math.min(innerWidth  - DOM.ambWidget.offsetWidth,  x));
-    y = Math.max(0, Math.min(innerHeight - DOM.ambWidget.offsetHeight, y));
-    DOM.ambWidget.style.left   = x+'px';
-    DOM.ambWidget.style.top    = y+'px';
-    DOM.ambWidget.style.right  = 'auto';
-    DOM.ambWidget.style.bottom = 'auto';
+    let x=Math.max(0,Math.min(innerWidth-DOM.ambWidget.offsetWidth, e.clientX-ox));
+    let y=Math.max(0,Math.min(innerHeight-DOM.ambWidget.offsetHeight, e.clientY-oy));
+    DOM.ambWidget.style.left=x+'px'; DOM.ambWidget.style.top=y+'px';
+    DOM.ambWidget.style.right='auto'; DOM.ambWidget.style.bottom='auto';
   });
-  document.addEventListener('mouseup', () => {
-    dragging = false;
-    DOM.ambWidget.classList.remove('grabbing');
-  });
+  document.addEventListener('mouseup', () => { dragging=false; DOM.ambWidget.classList.remove('grabbing'); });
 
-  // Touch drag
   handle.addEventListener('touchstart', e => {
     if (e.target.closest('button,input')) return;
-    const t = e.touches[0];
-    dragging = true;
-    const r = DOM.ambWidget.getBoundingClientRect();
-    ox = t.clientX - r.left; oy = t.clientY - r.top;
+    const t=e.touches[0]; dragging=true;
+    const r=DOM.ambWidget.getBoundingClientRect();
+    ox=t.clientX-r.left; oy=t.clientY-r.top;
   }, {passive:true});
   document.addEventListener('touchmove', e => {
     if (!dragging) return;
-    const t = e.touches[0];
-    let x = t.clientX - ox;
-    let y = t.clientY - oy;
-    x = Math.max(0, Math.min(innerWidth  - DOM.ambWidget.offsetWidth,  x));
-    y = Math.max(0, Math.min(innerHeight - DOM.ambWidget.offsetHeight, y));
-    DOM.ambWidget.style.left = x+'px'; DOM.ambWidget.style.top = y+'px';
-    DOM.ambWidget.style.right = 'auto'; DOM.ambWidget.style.bottom = 'auto';
+    const t=e.touches[0];
+    let x=Math.max(0,Math.min(innerWidth-DOM.ambWidget.offsetWidth, t.clientX-ox));
+    let y=Math.max(0,Math.min(innerHeight-DOM.ambWidget.offsetHeight, t.clientY-oy));
+    DOM.ambWidget.style.left=x+'px'; DOM.ambWidget.style.top=y+'px';
+    DOM.ambWidget.style.right='auto'; DOM.ambWidget.style.bottom='auto';
   }, {passive:true});
-  document.addEventListener('touchend', () => { dragging = false; });
+  document.addEventListener('touchend', () => { dragging=false; });
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1009,28 +1076,67 @@ function randomWisdom() {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   ABOUT MODAL — ⑧ logo click
+   ABOUT MODAL
 ═══════════════════════════════════════════════════════════ */
 function initAboutModal() {
-  document.querySelector('.sidebar-logo')?.addEventListener('click', () => {
-    DOM.aboutModal?.classList.add('open');
-  });
-  document.getElementById('about-close')?.addEventListener('click', () => {
-    DOM.aboutModal?.classList.remove('open');
-  });
+  document.querySelector('.sidebar-logo')?.addEventListener('click', () =>
+    DOM.aboutModal?.classList.add('open')
+  );
+  document.getElementById('about-close')?.addEventListener('click', () =>
+    DOM.aboutModal?.classList.remove('open')
+  );
   DOM.aboutModal?.addEventListener('click', e => {
     if (e.target===DOM.aboutModal) DOM.aboutModal.classList.remove('open');
   });
 }
 
 /* ═══════════════════════════════════════════════════════════
-   MOBILE NAV
+   MOBILE NAV + OVERLAY CLOSE ③
 ═══════════════════════════════════════════════════════════ */
+function openSidebar() {
+  DOM.sidebar.classList.add('open');
+  if (DOM.sidebarOverlay) {
+    DOM.sidebarOverlay.classList.add('visible');
+    requestAnimationFrame(() => requestAnimationFrame(() =>
+      DOM.sidebarOverlay.classList.add('faded-in')
+    ));
+  }
+}
+
+function closeSidebar() {
+  DOM.sidebar.classList.remove('open');
+  if (DOM.sidebarOverlay) {
+    DOM.sidebarOverlay.classList.remove('faded-in');
+    setTimeout(() => DOM.sidebarOverlay.classList.remove('visible'), 350);
+  }
+}
+
 function initMobileNav() {
-  document.getElementById('mobile-menu-toggle')?.addEventListener('click', () =>
-    DOM.sidebar.classList.toggle('open')
-  );
+  document.getElementById('mobile-menu-toggle')?.addEventListener('click', () => {
+    if (DOM.sidebar.classList.contains('open')) { closeSidebar(); }
+    else { openSidebar(); }
+  });
+
+  // ③ Click outside sidebar closes it
+  DOM.sidebarOverlay?.addEventListener('click', closeSidebar);
+
   window.addEventListener('resize', () => { State.isMobile = innerWidth < 900; });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CONTENT PROTECTION ⑤
+═══════════════════════════════════════════════════════════ */
+function initContentProtection() {
+  // Disable right-click
+  document.addEventListener('contextmenu', e => e.preventDefault());
+
+  // Disable image dragging
+  document.addEventListener('dragstart', e => {
+    if (e.target.tagName==='IMG') e.preventDefault();
+  });
+
+  // Prevent text selection via mouse on protected areas
+  // (text-select is re-enabled in CSS for .reader-content etc.)
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1041,10 +1147,12 @@ function initEscKey() {
     if (e.key!=='Escape') return;
     DOM.txtReader?.classList.remove('open');
     DOM.lightbox?.classList.remove('open');
-    DOM.pdfModal?.classList.remove('open');
+    if (DOM.pdfModal?.classList.contains('open')) closePdfModal();
     DOM.aboutModal?.classList.remove('open');
     closeVideoModal();
-    DOM.sidebar?.classList.remove('open');
+    closeSidebar();
+    DOM.speedPanel?.classList.remove('open');
+    DOM.speedBtn?.classList.remove('active');
   });
 }
 
@@ -1054,7 +1162,7 @@ function initEscKey() {
 function initSiteMeta() {
   const g = State.data.global;
   const name = g?.site?.name||'ShunyaSpace';
-  const sub  = g?.site?.subtitle||'शून्य';
+  const sub  = g?.site?.subtitle||'शून्य — the void that holds everything';
   const ne = document.getElementById('logo-name');
   const se = document.getElementById('logo-sub');
   if (ne) ne.textContent = name;
@@ -1063,7 +1171,7 @@ function initSiteMeta() {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   TOAST
+   TOAST + EMPTY STATE
 ═══════════════════════════════════════════════════════════ */
 function showToast(msg, ms=3000) {
   if (!DOM.toast) return;
@@ -1080,27 +1188,36 @@ function emptyState(glyph, msg) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   STARS CANVAS
+   STARS + FLOATING PARTICLES
 ═══════════════════════════════════════════════════════════ */
 function initStars() {
   const cv = document.getElementById('stars-canvas');
   if (!cv) return;
   const ctx = cv.getContext('2d');
-  const r = () => { cv.width=innerWidth; cv.height=innerHeight; };
-  r(); window.addEventListener('resize',r);
-  const stars = Array.from({length:120}, () => ({
+  const resize = () => { cv.width=innerWidth; cv.height=innerHeight; };
+  resize(); window.addEventListener('resize',resize);
+
+  const stars = Array.from({length:140}, () => ({
     x:Math.random(), y:Math.random(),
-    r:Math.random()*.8+.2, o:Math.random()*.4+.1,
+    r:Math.random()*.9+.15, o:Math.random()*.45+.08,
     s:Math.random()*.0003+.0001, p:Math.random()*Math.PI*2,
+    drift: (Math.random()-.5)*.00008, // very slow drift
+    dx:0, dy:0,
   }));
+
   let t=0;
   (function draw() {
     ctx.clearRect(0,0,cv.width,cv.height);
-    t+=.01;
+    t+=.008;
     stars.forEach(s => {
+      // Slow drift
+      s.dx += s.drift; s.dy += s.drift*.5;
+      const x = (s.x + s.dx) % 1;
+      const y = (s.y + s.dy) % 1;
+      const opacity = s.o*(0.55+0.45*Math.sin(t*s.s*120+s.p));
       ctx.beginPath();
-      ctx.arc(s.x*cv.width, s.y*cv.height, s.r, 0, Math.PI*2);
-      ctx.fillStyle = `rgba(192,132,252,${s.o*(0.6+0.4*Math.sin(t*s.s*100+s.p))})`;
+      ctx.arc(x*cv.width, y*cv.height, s.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(192,132,252,${opacity})`;
       ctx.fill();
     });
     requestAnimationFrame(draw);
@@ -1128,6 +1245,7 @@ async function boot() {
   initAboutModal();
   initEscKey();
   initStars();
+  initContentProtection();
 
   document.getElementById('btn-random')?.addEventListener('click', randomWisdom);
 
