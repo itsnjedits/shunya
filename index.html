@@ -38,7 +38,7 @@
     <span></span><span></span><span></span>
   </button>
   <span id="mobile-topbar-name">ShunyaSpace</span>
-  <span id="mobile-topbar-glyph">शून्य</span>
+  <img src="/shunya/logo.png" alt="ShunyaSpace" id="mobile-topbar-logo" onerror="this.style.display='none'">
 </div>
 
 <!-- Mobile sidebar overlay (click closes sidebar) -->
@@ -55,18 +55,8 @@
     <div class="sidebar-logo" role="button" tabindex="0"
          aria-label="About ShunyaSpace" title="About ShunyaSpace">
       <div class="logo-mark">
-        <svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <radialGradient id="lg" cx="50%" cy="50%" r="50%">
-              <stop offset="0%"   stop-color="#c084fc" stop-opacity=".8"/>
-              <stop offset="100%" stop-color="#7c3aed" stop-opacity=".2"/>
-            </radialGradient>
-          </defs>
-          <circle cx="30" cy="30" r="28" fill="none" stroke="#7c3aed" stroke-width=".7" opacity=".5"/>
-          <circle cx="30" cy="30" r="18" fill="none" stroke="#c084fc" stroke-width=".5" opacity=".35"/>
-          <circle cx="30" cy="30" r="8"  fill="url(#lg)"/>
-          <circle cx="30" cy="30" r="2.5" fill="#e9d5ff"/>
-        </svg>
+        <img src="/shunya/logo.png" alt="ShunyaSpace logo" class="logo-img"
+             onerror="this.parentElement.innerHTML='<svg viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'><defs><radialGradient id=\'lg\' cx=\'50%\' cy=\'50%\' r=\'50%\'><stop offset=\'0%\' stop-color=\'#c084fc\' stop-opacity=\'.8\'/><stop offset=\'100%\' stop-color=\'#7c3aed\' stop-opacity=\'.2\'/></radialGradient></defs><circle cx=\'30\' cy=\'30\' r=\'28\' fill=\'none\' stroke=\'#7c3aed\' stroke-width=\'.7\' opacity=\'.5\'/><circle cx=\'30\' cy=\'30\' r=\'18\' fill=\'none\' stroke=\'#c084fc\' stroke-width=\'.5\' opacity=\'.35\'/><circle cx=\'30\' cy=\'30\' r=\'8\' fill=\'url(%23lg)\'/><circle cx=\'30\' cy=\'30\' r=\'2.5\' fill=\'#e9d5ff\'/></svg>'">
       </div>
       <div id="logo-name" class="logo-name">ShunyaSpace</div>
       <div id="logo-sub"  class="logo-sub">शून्य — the void that holds everything</div>
@@ -93,7 +83,7 @@
     <!-- HOME -->
     <section id="section-home" class="section" role="region" aria-label="Pravaah">
       <div class="section-header">
-        <div class="section-eyebrow">Pravaah · प्रवाह</div>
+        <div class="section-eyebrow">Pravaah · <span class="hindi-word">प्रवाह</span></div>
         <h1 class="section-title">The <em>Flow</em></h1>
       </div>
       <div id="home-inner"></div>
@@ -102,7 +92,7 @@
     <!-- AUDIOS -->
     <section id="section-audios" class="section" role="region" aria-label="Shravan">
       <div class="section-header">
-        <div class="section-eyebrow">Shravan · श्रवण</div>
+        <div class="section-eyebrow">Shravan · <span class="hindi-word">श्रवण</span></div>
         <h1 class="section-title">What Is <em>Heard</em></h1>
         <p class="section-subtitle">Discourses, talks, and inquiries. Listen without conclusion.</p>
       </div>
@@ -112,7 +102,7 @@
     <!-- AMBIENT -->
     <section id="section-ambient" class="section" role="region" aria-label="Anubhuti">
       <div class="section-header">
-        <div class="section-eyebrow">Anubhuti · अनुभूति</div>
+        <div class="section-eyebrow">Anubhuti · <span class="hindi-word">अनुभूति</span></div>
         <h1 class="section-title"><em>Surrounding</em> Sound</h1>
         <p class="section-subtitle">Background sounds for presence. Soft, looping, gentle.</p>
       </div>
@@ -132,7 +122,7 @@
     <!-- ECHO -->
     <section id="section-echo" class="section" role="region" aria-label="Echo">
       <div class="section-header">
-        <div class="section-eyebrow">Echo · प्रतिध्वनि</div>
+        <div class="section-eyebrow">Echo · <span class="hindi-word">प्रतिध्वनि</span></div>
         <h1 class="section-title">Words That <em>Remain</em></h1>
         <p class="section-subtitle">Writings and teachings. Read slowly. Let them settle.</p>
       </div>
@@ -142,7 +132,7 @@
     <!-- IMAGES -->
     <section id="section-images" class="section" role="region" aria-label="Drishya">
       <div class="section-header">
-        <div class="section-eyebrow">Drishya · दृश्य</div>
+        <div class="section-eyebrow">Drishya · <span class="hindi-word">दृश्य</span></div>
         <h1 class="section-title">What Is <em>Seen</em></h1>
         <p class="section-subtitle">Still images for still minds. Gaze without grasping.</p>
       </div>
@@ -169,7 +159,16 @@
 ══════════════════════════════════════════════ -->
 <div id="bottom-player" role="region" aria-label="Audio player">
 
-  <!-- Seek row -->
+  <!-- Row 1: Thumbnail + Title -->
+  <div class="player-top-row">
+    <img id="player-thumb" src="" alt="Now playing">
+    <div class="player-info">
+      <div id="player-title">—</div>
+      <div id="player-speaker">—</div>
+    </div>
+  </div>
+
+  <!-- Row 2: Seek bar with times -->
   <div class="player-seek-row">
     <span class="player-time" id="time-elapsed">0:00</span>
     <div class="seek-track" role="slider" aria-label="Seek position">
@@ -179,35 +178,27 @@
     <span class="player-time right" id="time-remain">0:00</span>
   </div>
 
-  <!-- Controls row -->
+  <!-- Row 3: All Controls in ONE row -->
   <div class="player-controls-row">
-    <img id="player-thumb" src="" alt="Now playing">
-    <div class="player-info">
-      <div id="player-title">—</div>
-      <div id="player-speaker">—</div>
-    </div>
-
-    <div class="player-transport">
-      <button class="btn-skip" id="btn-skip-back" title="−10 seconds">−10</button>
-      <button class="btn-prev-next" id="btn-prev" title="Previous" aria-label="Previous">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
-          <polygon points="19,20 9,12 19,4"/>
-          <line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2"/>
-        </svg>
-      </button>
-      <button id="btn-play-pause" title="Play / Pause" aria-label="Play or pause">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-          <polygon points="5,3 19,12 5,21"/>
-        </svg>
-      </button>
-      <button class="btn-prev-next" id="btn-next" title="Next" aria-label="Next">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
-          <polygon points="5,4 15,12 5,20"/>
-          <line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"/>
-        </svg>
-      </button>
-      <button class="btn-skip" id="btn-skip-fwd" title="+10 seconds">+10</button>
-    </div>
+    <button class="btn-skip" id="btn-skip-back" title="−10 seconds">−10</button>
+    <button class="btn-prev-next" id="btn-prev" title="Previous" aria-label="Previous">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+        <polygon points="19,20 9,12 19,4"/>
+        <line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2"/>
+      </svg>
+    </button>
+    <button id="btn-play-pause" title="Play / Pause" aria-label="Play or pause">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <polygon points="5,3 19,12 5,21"/>
+      </svg>
+    </button>
+    <button class="btn-prev-next" id="btn-next" title="Next" aria-label="Next">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+        <polygon points="5,4 15,12 5,20"/>
+        <line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"/>
+      </svg>
+    </button>
+    <button class="btn-skip" id="btn-skip-fwd" title="+10 seconds">+10</button>
 
     <button id="btn-speed" title="Playback speed" aria-label="Playback speed">1×</button>
 
@@ -218,7 +209,6 @@
           <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
         </svg>
       </button>
-      <!-- Slider hidden on mobile; popup used instead -->
       <input type="range" id="player-volume" min="0" max="100" value="85" aria-label="Volume" class="desktop-vol-slider">
     </div>
 
@@ -278,9 +268,15 @@
   </div>
 </div>
 
+<!-- PWA Update Banner -->
+<div id="pwa-update-banner" style="display:none;" role="alert" aria-live="assertive">
+  <span>✦ New version available</span>
+  <button id="pwa-reload-btn">Reload</button>
+</div>
+
 <!-- Hidden audio elements -->
 <audio id="main-audio"    preload="metadata" style="display:none;"></audio>
-<audio id="ambient-audio" preload="none" loop style="display:none;"></audio>
+<audio id="ambient-audio" preload="none" style="display:none;"></audio>
 
 <!-- ══════════════════════════════════════════════
      LOADING TOAST ① (spinner + %)
@@ -302,43 +298,44 @@
       <span></span><span></span>
     </div>
     <span class="aw-label">Ambient</span>
-    <!-- ⑤ Close hides widget only — does NOT stop audio -->
-    <button class="aw-close" id="aw-close" aria-label="Hide widget (audio keeps playing)">✕</button>
+    <button class="aw-close" id="aw-close" aria-label="Hide widget">✕</button>
   </div>
 
-  <!-- Image area with blur/hide modes ⑥ -->
-  <div class="aw-image-wrap" id="aw-image-wrap">
-    <div class="aw-img-empty">〰</div>
-  </div>
-
-  <!-- Image mode toggle -->
-  <div class="aw-img-controls">
-    <button class="aw-img-btn active" data-mode="show" title="Show image">Show</button>
-    <button class="aw-img-btn" data-mode="blur" title="Blur image">Blur</button>
-    <button class="aw-img-btn" data-mode="hide" title="Hide image">Hide</button>
-  </div>
-
-  <div class="aw-info">
+  <!-- Thumbnail + Title row -->
+  <div class="aw-info-row">
+    <div class="aw-thumb-wrap" id="aw-thumb-wrap">
+      <div class="aw-img-empty">〰</div>
+    </div>
     <div class="aw-title" id="aw-title">—</div>
+  </div>
+
+  <!-- Seek slider -->
+  <div class="aw-seek-row">
+    <span class="aw-time" id="aw-time-elapsed">0:00</span>
+    <div class="aw-seek-track" id="aw-seek-track">
+      <div class="aw-seek-fill" id="aw-seek-fill"></div>
+      <div class="aw-seek-thumb"></div>
+    </div>
+    <span class="aw-time" id="aw-time-remain">0:00</span>
   </div>
 
   <div class="aw-controls">
     <!-- Prev ambient -->
-    <button class="btn-prev-next" id="aw-prev" style="width:26px;height:26px;color:var(--text-muted);" title="Previous ambient" aria-label="Previous">
+    <button class="btn-prev-next" id="aw-prev" style="width:26px;height:26px;color:var(--text-muted);" title="Previous" aria-label="Previous">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
         <polygon points="19,20 9,12 19,4"/><line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2"/>
       </svg>
     </button>
 
-    <button class="aw-play-btn" id="aw-play-btn" aria-label="Play or pause">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
-    </button>
-
     <!-- Next ambient -->
-    <button class="btn-prev-next" id="aw-next" style="width:26px;height:26px;color:var(--text-muted);" title="Next ambient" aria-label="Next">
+    <button class="btn-prev-next" id="aw-next" style="width:26px;height:26px;color:var(--text-muted);" title="Next" aria-label="Next">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
         <polygon points="5,4 15,12 5,20"/><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"/>
       </svg>
+    </button>
+
+    <button class="aw-play-btn" id="aw-play-btn" aria-label="Play or pause">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
     </button>
 
     <!-- Volume icon → opens popup -->
@@ -348,9 +345,9 @@
         <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
       </svg>
     </button>
-    <!-- Hidden range kept for JS sync -->
     <input type="range" class="aw-volume" id="aw-volume" min="0" max="100" value="30" aria-label="Ambient volume" style="display:none">
     <button class="aw-stop" id="aw-stop" title="Stop ambient audio">■</button>
+    <a class="aw-download" id="aw-download" href="#" download title="Download" aria-label="Download">↓</a>
   </div>
 </div>
 
@@ -396,6 +393,13 @@
 ══════════════════════════════════════════════ -->
 <div id="lightbox" role="dialog" aria-modal="true" aria-label="Image viewer">
   <button id="lightbox-close" aria-label="Close">✕</button>
+
+  <!-- Zoom controls -->
+  <div class="lightbox-zoom-controls">
+    <button class="lb-zoom-btn" id="lb-zoom-in" title="Zoom in" aria-label="Zoom in">+</button>
+    <button class="lb-zoom-btn" id="lb-zoom-reset" title="Reset zoom" aria-label="Reset zoom">↺</button>
+    <button class="lb-zoom-btn" id="lb-zoom-out" title="Zoom out" aria-label="Zoom out">−</button>
+  </div>
 
   <!-- Navigation arrows -->
   <button class="lightbox-nav" id="lb-prev" aria-label="Previous image">‹</button>
@@ -488,9 +492,21 @@
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('./service-worker.js')
-        .then(reg => console.log('[SW] Registered, scope:', reg.scope))
+        .then(reg => {
+          console.log('[SW] Registered, scope:', reg.scope);
+          reg.addEventListener('updatefound', () => {
+            const nw = reg.installing;
+            nw?.addEventListener('statechange', () => {
+              if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                const banner = document.getElementById('pwa-update-banner');
+                if (banner) banner.style.display = 'flex';
+              }
+            });
+          });
+        })
         .catch(err => console.warn('[SW] Registration failed:', err));
     });
+    document.getElementById('pwa-reload-btn')?.addEventListener('click', () => window.location.reload(true));
   }
 </script>
 </body>

@@ -92,7 +92,7 @@ function cacheDom() {
 
   DOM.ambWidget      = document.getElementById('ambient-widget');
   DOM.awTitle        = document.getElementById('aw-title');
-  DOM.awImageWrap    = document.getElementById('aw-image-wrap');
+  DOM.awThumbWrap    = document.getElementById('aw-thumb-wrap');
   DOM.awPlayBtn      = document.getElementById('aw-play-btn');
   DOM.awVolume       = document.getElementById('aw-volume');
   DOM.awVolBtn       = document.getElementById('aw-vol-btn');
@@ -270,16 +270,23 @@ async function loadAllData() {
   State.audio.list   = State.data.audios;
   State.videoList    = State.data.videos;
 
-  State.quoteList = State.data.home?.quotes?.length
-    ? State.data.home.quotes
-    : [
-      {text:'The quieter you become, the more you can hear.', author:'Ram Dass'},
-      {text:'Emptiness is not a void. It is the ground of being.', author:'Krishnamurti'},
-      {text:'You are not a drop in the ocean. You are the entire ocean in a drop.', author:'Rumi'},
-      {text:'What you are looking for is what is looking.', author:'Francis of Assisi'},
-      {text:'Silence is not the absence of sound but the presence of everything.', author:'Unknown'},
-      {text:'The present moment is the only moment available to us.', author:'Thich Nhat Hanh'},
-    ];
+  // Fetch quotes from /shunya/quotes.json, fall back to home.json, then hardcoded
+  const quotesJson = await fetchJSON('/shunya/quotes.json', true);
+  const FALLBACK_QUOTES = [
+    {text:'The quieter you become, the more you can hear.', author:'Ram Dass'},
+    {text:'Emptiness is not a void. It is the ground of being.', author:'Krishnamurti'},
+    {text:'You are not a drop in the ocean. You are the entire ocean in a drop.', author:'Rumi'},
+    {text:'What you are looking for is what is looking.', author:'Francis of Assisi'},
+    {text:'Silence is not the absence of sound but the presence of everything.', author:'Unknown'},
+    {text:'The present moment is the only moment available to us.', author:'Thich Nhat Hanh'},
+  ];
+  if (quotesJson?.length) {
+    State.quoteList = quotesJson.map(q => ({text: q.quote || q.text || '', author: q.writer || q.author || ''}));
+  } else if (State.data.home?.quotes?.length) {
+    State.quoteList = State.data.home.quotes;
+  } else {
+    State.quoteList = FALLBACK_QUOTES;
+  }
   State.quoteIndex = Math.floor(Math.random() * State.quoteList.length);
 }
 
@@ -360,10 +367,17 @@ function getItemProgress(item) {
     const s = Store.getTxtScroll(item.id), h = Store.getTxtHeight(item.id);
     return h > 0 ? Math.min(100, Math.round((s/h)*100)) : 0;
   }
+  if (item.type==='pdf') {
+    const s = Store.getPdfScroll(item.id), h = Store.getPdfHeight(item.id);
+    return h > 0 ? Math.min(100, Math.round((s/h)*100)) : 0;
+  }
   if (item.id?.startsWith('vid_')) {
     const t = Store.getVideoTime(item.id), d = Store.getVideoDur(item.id);
     return d > 0 ? Math.round((t/d)*100) : 0;
   }
+  // PDFs in books section (no explicit type field)
+  const pdfS = Store.getPdfScroll(item.id), pdfH = Store.getPdfHeight(item.id);
+  if (pdfH > 0) return Math.min(100, Math.round((pdfS/pdfH)*100));
   return 0;
 }
 
@@ -1012,25 +1026,62 @@ function _showLightboxFrame(imgs, idx) {
 }
 
 function initLightbox() {
-  document.getElementById('lightbox-close')?.addEventListener('click', () => DOM.lightbox.classList.remove('open'));
-  DOM.lightbox?.addEventListener('click', e => { if(e.target===DOM.lightbox) DOM.lightbox.classList.remove('open'); });
+  let lbZoom = 1;
+  const ZOOM_STEP = 0.5, ZOOM_MIN = 0.5, ZOOM_MAX = 4;
+
+  const applyZoom = () => {
+    if (DOM.lightboxImg) {
+      DOM.lightboxImg.style.transform = `scale(${lbZoom})`;
+      DOM.lightboxImg.style.cursor = lbZoom > 1 ? 'zoom-out' : 'default';
+    }
+  };
+  const resetZoom = () => { lbZoom = 1; applyZoom(); };
+
+  document.getElementById('lb-zoom-in')?.addEventListener('click', e => {
+    e.stopPropagation(); lbZoom = Math.min(ZOOM_MAX, lbZoom + ZOOM_STEP); applyZoom();
+  });
+  document.getElementById('lb-zoom-out')?.addEventListener('click', e => {
+    e.stopPropagation(); lbZoom = Math.max(ZOOM_MIN, lbZoom - ZOOM_STEP); applyZoom();
+  });
+  document.getElementById('lb-zoom-reset')?.addEventListener('click', e => {
+    e.stopPropagation(); resetZoom();
+  });
+
+  document.getElementById('lightbox-close')?.addEventListener('click', () => {
+    DOM.lightbox.classList.remove('open'); resetZoom();
+  });
+  DOM.lightbox?.addEventListener('click', e => {
+    if(e.target===DOM.lightbox) { DOM.lightbox.classList.remove('open'); resetZoom(); }
+  });
   DOM.lbPrev?.addEventListener('click', e => {
-    e.stopPropagation();
+    e.stopPropagation(); resetZoom();
     const imgs = State.lightboxImages.length ? State.lightboxImages : State.data.images;
     if (State.lightboxIndex > 0) { State.lightboxIndex--; _showLightboxFrame(imgs, State.lightboxIndex); }
   });
   DOM.lbNext?.addEventListener('click', e => {
-    e.stopPropagation();
+    e.stopPropagation(); resetZoom();
     const imgs = State.lightboxImages.length ? State.lightboxImages : State.data.images;
     if (State.lightboxIndex < imgs.length-1) { State.lightboxIndex++; _showLightboxFrame(imgs, State.lightboxIndex); }
   });
-  // Keyboard navigation in lightbox
+  // Keyboard navigation
   document.addEventListener('keydown', e => {
     if (!DOM.lightbox?.classList.contains('open')) return;
     const imgs = State.lightboxImages.length ? State.lightboxImages : State.data.images;
-    if (e.key==='ArrowRight' && State.lightboxIndex < imgs.length-1) { State.lightboxIndex++; _showLightboxFrame(imgs, State.lightboxIndex); }
-    if (e.key==='ArrowLeft'  && State.lightboxIndex > 0) { State.lightboxIndex--; _showLightboxFrame(imgs, State.lightboxIndex); }
+    if (e.key==='ArrowRight' && State.lightboxIndex < imgs.length-1) { resetZoom(); State.lightboxIndex++; _showLightboxFrame(imgs, State.lightboxIndex); }
+    if (e.key==='ArrowLeft'  && State.lightboxIndex > 0) { resetZoom(); State.lightboxIndex--; _showLightboxFrame(imgs, State.lightboxIndex); }
+    if (e.key==='+' || e.key==='=') { lbZoom = Math.min(ZOOM_MAX, lbZoom+ZOOM_STEP); applyZoom(); }
+    if (e.key==='-') { lbZoom = Math.max(ZOOM_MIN, lbZoom-ZOOM_STEP); applyZoom(); }
+    if (e.key==='0') { resetZoom(); }
   });
+  // Mouse wheel zoom
+  DOM.lightbox?.addEventListener('wheel', e => {
+    if (!DOM.lightbox?.classList.contains('open')) return;
+    e.preventDefault();
+    lbZoom = e.deltaY < 0
+      ? Math.min(ZOOM_MAX, lbZoom + 0.25)
+      : Math.max(ZOOM_MIN, lbZoom - 0.25);
+    applyZoom();
+  }, {passive:false});
 }
 
 /* ─── BOOKS ─────────────────────────────────────────────── */
@@ -1132,7 +1183,7 @@ function toggleAmbient(id) {
   stopAmbient();
 
   DOM.ambientAudio.src    = item.url;
-  DOM.ambientAudio.loop   = true;
+  DOM.ambientAudio.loop   = false;
   DOM.ambientAudio.volume = State.ambient.volume;
 
   showLoadingToast('Loading ambient…');
@@ -1177,23 +1228,19 @@ function showAmbientWidget(item) {
   DOM.ambWidget.classList.add('visible');
   if (DOM.awTitle) DOM.awTitle.textContent = item.title||'—';
 
-  // Update image area
-  if (DOM.awImageWrap) {
+  // Update thumbnail
+  const thumbWrap = document.getElementById('aw-thumb-wrap');
+  if (thumbWrap) {
     if (item.thumbnailUrl) {
-      const existing = DOM.awImageWrap.querySelector('img');
-      if (!existing) {
-        const img = document.createElement('img');
-        img.src = item.thumbnailUrl; img.alt = item.title;
-        DOM.awImageWrap.innerHTML = '';
-        DOM.awImageWrap.appendChild(img);
-      } else {
-        existing.src = item.thumbnailUrl;
-      }
+      thumbWrap.innerHTML = `<img src="${item.thumbnailUrl}" alt="${item.title||''}">`;
     } else {
-      DOM.awImageWrap.innerHTML = '<div class="aw-img-empty">〰</div>';
+      thumbWrap.innerHTML = '<div class="aw-img-empty">〰</div>';
     }
-    applyAmbientImgMode();
   }
+
+  // Update download link
+  const awDl = document.getElementById('aw-download');
+  if (awDl) { awDl.href = item.url||'#'; awDl.setAttribute('download', item.file||''); }
 
   // Update nav buttons
   const items = State.data.ambient;
@@ -1201,23 +1248,20 @@ function showAmbientWidget(item) {
   if (DOM.awPrevBtn) DOM.awPrevBtn.disabled = idx <= 0;
   if (DOM.awNextBtn) DOM.awNextBtn.disabled = idx >= items.length-1;
 
+  // Reset seek display
+  const elapsed = document.getElementById('aw-time-elapsed');
+  const remain  = document.getElementById('aw-time-remain');
+  const fill    = document.getElementById('aw-seek-fill');
+  if (elapsed) elapsed.textContent = '0:00';
+  if (remain)  remain.textContent  = '0:00';
+  if (fill)    fill.style.width    = '0%';
+
   updateWidgetPlayIcon();
 }
 
 function hideAmbientWidget() {
   // ⑤ Only hides the UI — does NOT stop audio
   DOM.ambWidget?.classList.remove('visible');
-}
-
-function applyAmbientImgMode() {
-  if (!DOM.awImageWrap) return;
-  DOM.awImageWrap.classList.remove('aw-blur','aw-hide');
-  if (State.ambientImgMode==='blur') DOM.awImageWrap.classList.add('aw-blur');
-  if (State.ambientImgMode==='hide') DOM.awImageWrap.classList.add('aw-hide');
-  // Update buttons
-  document.querySelectorAll('.aw-img-btn').forEach(b =>
-    b.classList.toggle('active', b.dataset.mode===State.ambientImgMode)
-  );
 }
 
 function updateWidgetPlayIcon() {
@@ -1228,12 +1272,41 @@ function updateWidgetPlayIcon() {
 }
 
 function initAmbientControls() {
-  // The old #ambient-volume section slider is removed; volume handled via aw-vol-popup
   document.querySelector('.ambient-mini-stop')?.addEventListener('click', () => {
     stopAmbient(); State.rendered.delete('ambient'); renderAmbient();
   });
   DOM.ambientAudio?.addEventListener('canplay', hideLoadingToast);
   DOM.ambientAudio?.addEventListener('error', () => { hideLoadingToast(); showToast('Ambient error.'); });
+
+  // Play once → stop (no loop)
+  DOM.ambientAudio?.addEventListener('ended', () => {
+    State.ambient.isPlaying = false;
+    updateWidgetPlayIcon();
+    const fill = document.getElementById('aw-seek-fill');
+    if (fill) fill.style.width = '0%';
+    State.rendered.delete('ambient'); renderAmbient();
+  });
+
+  // Seek slider: timeupdate → update fill + time display
+  DOM.ambientAudio?.addEventListener('timeupdate', () => {
+    const dur = DOM.ambientAudio.duration;
+    const cur = DOM.ambientAudio.currentTime;
+    if (!dur || isNaN(dur)) return;
+    const fill    = document.getElementById('aw-seek-fill');
+    const elapsed = document.getElementById('aw-time-elapsed');
+    const remain  = document.getElementById('aw-time-remain');
+    if (fill)    fill.style.width    = ((cur/dur)*100)+'%';
+    if (elapsed) elapsed.textContent = fmt(cur);
+    if (remain)  remain.textContent  = '-'+fmt(dur-cur);
+  });
+
+  // Seek track click
+  const awSeekTrack = document.getElementById('aw-seek-track');
+  awSeekTrack?.addEventListener('click', e => {
+    if (!DOM.ambientAudio.duration) return;
+    const r = awSeekTrack.getBoundingClientRect();
+    DOM.ambientAudio.currentTime = ((e.clientX-r.left)/r.width)*DOM.ambientAudio.duration;
+  });
 }
 
 function initAmbientWidget() {
@@ -1261,7 +1334,6 @@ function initAmbientWidget() {
   };
 
   if (DOM.awVolume) DOM.awVolume.value = State.ambient.volume*100;
-
   if (DOM.awVolPopupSlider) {
     DOM.awVolPopupSlider.value = State.ambient.volume*100;
     DOM.awVolPopupSlider.addEventListener('input', function() { syncAmbVol(+this.value); });
@@ -1275,7 +1347,6 @@ function initAmbientWidget() {
     const isOpen = DOM.awVolPopup.classList.contains('open');
     closeAllPopups();
     if (!isOpen) {
-      /* Position popup near the widget */
       const wr = DOM.ambWidget.getBoundingClientRect();
       DOM.awVolPopup.style.bottom = (window.innerHeight - wr.top + 8) + 'px';
       DOM.awVolPopup.style.right  = (window.innerWidth - wr.right) + 'px';
@@ -1285,7 +1356,7 @@ function initAmbientWidget() {
     }
   });
 
-  // Prev / Next in ambient widget
+  // Prev / Next
   DOM.awPrevBtn?.addEventListener('click', e => {
     e.stopPropagation();
     const items = State.data.ambient;
@@ -1304,26 +1375,21 @@ function initAmbientWidget() {
     e.stopPropagation(); closeAllPopups(); stopAmbient(); State.rendered.delete('ambient'); renderAmbient();
   });
 
-  // ⑤ Close = hide only, not stop
+  // Close = hide only, not stop
   document.getElementById('aw-close')?.addEventListener('click', e => {
     e.stopPropagation(); closeAllPopups(); hideAmbientWidget();
   });
 
-  // ⑥ Image mode toggle
-  document.querySelectorAll('.aw-img-btn').forEach(btn =>
-    btn.addEventListener('click', e => {
-      e.stopPropagation();
-      State.ambientImgMode = btn.dataset.mode;
-      applyAmbientImgMode();
-    })
-  );
-
-  // Draggable
+  /* ── Draggable ──
+     Desktop: drag from anywhere in .aw-header
+     Mobile:  drag ONLY via .aw-drag-dots handle
+  */
   let dragging=false, ox=0, oy=0;
-  const handle = DOM.ambWidget.querySelector('.aw-header') || DOM.ambWidget;
+  const mouseHandle = DOM.ambWidget.querySelector('.aw-header') || DOM.ambWidget;
+  const touchHandle = DOM.ambWidget.querySelector('.aw-drag-dots') || DOM.ambWidget;
 
-  handle.addEventListener('mousedown', e => {
-    if (e.target.closest('button,input')) return;
+  mouseHandle.addEventListener('mousedown', e => {
+    if (e.target.closest('button,input,a')) return;
     dragging=true; DOM.ambWidget.classList.add('grabbing');
     const r = DOM.ambWidget.getBoundingClientRect();
     ox=e.clientX-r.left; oy=e.clientY-r.top; e.preventDefault();
@@ -1337,8 +1403,8 @@ function initAmbientWidget() {
   });
   document.addEventListener('mouseup', () => { dragging=false; DOM.ambWidget.classList.remove('grabbing'); });
 
-  handle.addEventListener('touchstart', e => {
-    if (e.target.closest('button,input')) return;
+  // Mobile: touch drag ONLY from .aw-drag-dots
+  touchHandle.addEventListener('touchstart', e => {
     const t=e.touches[0]; dragging=true;
     const r=DOM.ambWidget.getBoundingClientRect();
     ox=t.clientX-r.left; oy=t.clientY-r.top;
