@@ -7,12 +7,6 @@
       "title": "Love Is Wind",
       "file": "pdfs/Love Is Wind.pdf",
       "thumbnail": "pdfs/thumbnails/Love Is Wind.jpg"
-    },
-    {
-      "id": "echo_pdf_2",
-      "title": "Poetry",
-      "file": "pdfs/POETRY.pdf",
-      "thumbnail": "pdfs/thumbnails/POETRY.jpg"
     }
   ],
   "txts": [
@@ -30,9 +24,33 @@
     },
     {
       "id": "echo_txt_3",
+      "title": "Ehsaas",
+      "file": "txt/ehsaas.txt",
+      "thumbnail": "txt/thumbnails/ehsaas.jpg"
+    },
+    {
+      "id": "echo_txt_4",
       "title": "Mitna",
       "file": "txt/mitna.txt",
       "thumbnail": "txt/thumbnails/mitna.jpg"
+    },
+    {
+      "id": "echo_txt_5",
+      "title": "Poetry",
+      "file": "txt/poetry.txt",
+      "thumbnail": "txt/thumbnails/poetry.jpg"
+    },
+    {
+      "id": "echo_txt_6",
+      "title": "Priy Dost",
+      "file": "txt/priy dost.txt",
+      "thumbnail": "txt/thumbnails/priy dost.jpg"
+    },
+    {
+      "id": "echo_txt_7",
+      "title": "Universities",
+      "file": "txt/universities.txt",
+      "thumbnail": "txt/thumbnails/universities.jpg"
     }
   ]
 }
