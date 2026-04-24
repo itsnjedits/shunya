@@ -4,9 +4,9 @@
    A silence you can enter — even offline.
 ═══════════════════════════════════════════════════════════ */
 
-const CACHE_NAME    = 'shunyaspace-v2';
-const DATA_CACHE    = 'shunyaspace-data-v2';
-const FONT_CACHE    = 'shunyaspace-fonts-v3';
+const CACHE_NAME    = 'shunyaspace-v4';
+const DATA_CACHE    = 'shunyaspace-data-v4';
+const FONT_CACHE    = 'shunyaspace-fonts-v4';
 
 /* App shell — always cached */
 const SHELL_ASSETS = [
