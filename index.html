@@ -19,70 +19,153 @@
   <meta name="msapplication-TileImage" content="pwa_icon/splash.png">
 
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
-  <link rel="stylesheet" href="styles.css">
-  <!-- PDF.js for canvas-based PDF rendering -->
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            void:    '#07060f',
+            deep:    '#0d0b1a',
+            surface: '#13111f',
+            raised:  '#1a1729',
+            elevated:'#201d30',
+            violet:  '#7c3aed',
+            purple:  '#9333ea',
+            orchid:  '#c084fc',
+            rose:    '#f472b6',
+            'text-primary':   '#f0ebff',
+            'text-secondary': '#b39dfa',
+            'text-muted':     '#7a6d9e',
+            'text-dim':       '#45385e',
+          },
+          fontFamily: {
+            serif: ['Cormorant Garamond', 'Georgia', 'serif'],
+            ui:    ['Outfit', 'system-ui', 'sans-serif'],
+            hindi: ['Tiro Devanagari Hindi', 'serif'],
+          },
+          transitionTimingFunction: {
+            silk: 'cubic-bezier(.25,.46,.45,.94)',
+            calm: 'cubic-bezier(.16,1,.3,1)',
+            snap: 'cubic-bezier(.34,1.56,.64,1)',
+          },
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Outfit:wght@200;300;400;500&family=Tiro+Devanagari+Hindi:ital@0;1&display=swap" rel="stylesheet">
+
+  <!-- PDF.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
+
+  <link rel="stylesheet" href="styles.css">
 </head>
 
-<body>
+<body class="bg-void text-text-primary font-ui overflow-x-hidden antialiased select-none">
 
-/* Stars */
-<canvas id="stars-canvas" style="position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.7;"></canvas>
-<!-- Breathing right-side particles canvas -->
-<canvas id="orbs-canvas" style="position:fixed;inset:0;pointer-events:none;z-index:0;opacity:1;"></canvas>
+<!-- Stars canvas -->
+<canvas id="stars-canvas" class="fixed inset-0 pointer-events-none z-0" style="opacity:.7;"></canvas>
+<!-- Orbs canvas -->
+<canvas id="orbs-canvas" class="fixed inset-0 pointer-events-none z-0" style="opacity:1;"></canvas>
 
 <!-- ══════════════════════════════════════════════
-     MOBILE TOPBAR — fixes hamburger/logo overlap
-     Only visible on screens < 900px
+     MOBILE TOPBAR — only on < 900px
 ══════════════════════════════════════════════ -->
-<div id="mobile-topbar" aria-label="Mobile navigation bar">
-  <button id="mobile-menu-toggle" aria-label="Open menu">
-    <span></span><span></span><span></span>
+<div id="mobile-topbar"
+     class="hidden fixed top-0 left-0 right-0 z-[200] items-center gap-3 px-4"
+     style="height:var(--topbar-h); background:rgba(13,11,26,.97); backdrop-filter:blur(16px); border-bottom:1px solid rgba(192,132,252,.10);"
+     aria-label="Mobile navigation bar">
+
+  <!-- Hamburger — always leftmost -->
+  <button id="mobile-menu-toggle"
+          class="flex flex-col items-center justify-center gap-[5px] p-2 shrink-0 z-10"
+          aria-label="Open menu">
+    <span class="block w-5 h-[2px] rounded-sm transition-all duration-300" style="background:var(--orchid);"></span>
+    <span class="block w-5 h-[2px] rounded-sm transition-all duration-300" style="background:var(--orchid);"></span>
+    <span class="block w-5 h-[2px] rounded-sm transition-all duration-300" style="background:var(--orchid);"></span>
   </button>
-  <span id="mobile-topbar-name">ShunyaSpace</span>
-  <img src="/logo.png" alt="ShunyaSpace" id="mobile-topbar-logo" onerror="this.style.display='none'">
+
+  <!-- Site name — clickable → opens About modal -->
+  <span id="mobile-topbar-name"
+        class="flex-1 text-center font-serif font-light tracking-widest text-text-primary cursor-pointer hover:opacity-80 transition-opacity duration-200 select-none"
+        style="font-size:1.1rem; letter-spacing:.08em;"
+        role="button" tabindex="0" aria-label="About ShunyaSpace">ShunyaSpace</span>
+
+  <!-- Logo — clickable → opens About modal -->
+  <img src="logo.png" alt="ShunyaSpace" id="mobile-topbar-logo"
+       class="w-7 h-7 object-contain rounded-md shrink-0 cursor-pointer hover:opacity-80 transition-opacity duration-200"
+       style="filter:drop-shadow(0 0 6px rgba(192,132,252,.4)); pointer-events:auto;"
+       onerror="this.style.display='none'"
+       role="button" tabindex="0" aria-label="About ShunyaSpace">
 </div>
 
-<!-- Mobile sidebar overlay (click closes sidebar) -->
-<div id="sidebar-overlay" aria-hidden="true"></div>
+<!-- Mobile sidebar overlay -->
+<div id="sidebar-overlay" class="hidden fixed inset-0 z-[140] opacity-0 transition-opacity duration-300"
+     style="background:rgba(7,6,15,.65); backdrop-filter:blur(4px);" aria-hidden="true"></div>
 
 <!-- ══════════════════════════════════════════════
      #app — flex root
 ══════════════════════════════════════════════ -->
-<div id="app">
+<div id="app" class="flex min-h-screen opacity-0 transition-opacity duration-700">
 
   <!-- ── SIDEBAR ── -->
-  <aside id="sidebar" aria-label="Navigation">
+  <aside id="sidebar"
+         class="fixed top-0 left-0 h-screen flex flex-col z-[150] overflow-hidden transition-transform duration-400"
+         style="width:var(--nav-w); background:linear-gradient(180deg,#0d0b1a,#0a091a); border-right:1px solid rgba(124,58,237,.22);"
+         aria-label="Navigation">
 
-    <div class="sidebar-logo" role="button" tabindex="0"
-         aria-label="About ShunyaSpace" title="About ShunyaSpace">
-      <div class="logo-lockup">
-        <div class="logo-mark">
-          <img src="logo.png" alt="ShunyaSpace logo" class="logo-img"
+    <!-- Sidebar glow line -->
+    <div class="absolute top-0 right-0 w-px h-full pointer-events-none"
+         style="background:linear-gradient(180deg,transparent,#7c3aed 50%,transparent); opacity:.25;"></div>
+
+    <!-- Logo area — clickable → About modal -->
+    <!-- On mobile: pushed down by topbar height so content starts BELOW the hamburger bar -->
+    <div class="sidebar-logo px-5 pt-5 pb-4 border-b cursor-pointer transition-opacity duration-300 hover:opacity-85 shrink-0"
+         style="border-color:rgba(192,132,252,.10); margin-top:var(--sidebar-logo-mt, 0);"
+         role="button" tabindex="0" aria-label="About ShunyaSpace" title="About ShunyaSpace">
+      <div class="logo-lockup flex items-center gap-3">
+        <div class="logo-mark shrink-0" style="width:46px;height:46px;">
+          <img src="logo.png" alt="ShunyaSpace logo" class="logo-img w-full h-full object-contain rounded-[10px]"
                onerror="this.parentElement.innerHTML='<svg viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'><defs><radialGradient id=\'lg\' cx=\'50%\' cy=\'50%\' r=\'50%\'><stop offset=\'0%\' stop-color=\'#c084fc\' stop-opacity=\'.8\'/><stop offset=\'100%\' stop-color=\'#7c3aed\' stop-opacity=\'.2\'/></radialGradient></defs><circle cx=\'30\' cy=\'30\' r=\'28\' fill=\'none\' stroke=\'#7c3aed\' stroke-width=\'.7\' opacity=\'.5\'/><circle cx=\'30\' cy=\'30\' r=\'18\' fill=\'none\' stroke=\'#c084fc\' stroke-width=\'.5\' opacity=\'.35\'/><circle cx=\'30\' cy=\'30\' r=\'8\' fill=\'url(%23lg)\'/><circle cx=\'30\' cy=\'30\' r=\'2.5\' fill=\'#e9d5ff\'/></svg>'">
         </div>
-        <div id="logo-name" class="logo-name">ShunyaSpace</div>
+        <div id="logo-name" class="font-serif font-light tracking-widest leading-none text-text-primary" style="font-size:1.25rem; letter-spacing:.08em;">ShunyaSpace</div>
       </div>
-      <div id="logo-sub" class="logo-sub" style="display:none" aria-hidden="true"></div>
+      <div id="logo-sub" class="hidden" aria-hidden="true"></div>
     </div>
 
-    <nav aria-label="Site sections">
-      <ul class="nav-list" id="nav-list"></ul>
+    <!-- Nav -->
+    <nav class="flex-1 overflow-y-auto" aria-label="Site sections">
+      <ul class="nav-list py-3" id="nav-list"></ul>
     </nav>
 
-    <div class="sidebar-bottom">
-      <div class="ambient-mini">
-        <div class="ambient-mini-title">
+    <!-- Bottom -->
+    <div class="sidebar-bottom p-3.5 border-t shrink-0" style="border-color:rgba(192,132,252,.10);">
+      <div class="ambient-mini hidden">
+        <div class="ambient-mini-title flex items-center justify-between" style="font-size:.65rem; color:var(--orchid); letter-spacing:.1em;">
           <span>No ambient</span>
-          <span class="ambient-mini-stop" title="Stop ambient">✕</span>
+          <span class="ambient-mini-stop cursor-pointer opacity-60 hover:opacity-100 transition-opacity duration-200">✕</span>
         </div>
       </div>
-      <button id="btn-random"><span>✦</span> Random Wisdom</button>
+      <button id="btn-random"
+              class="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border transition-all duration-300 hover:border-orchid"
+              style="border-color:rgba(124,58,237,.22); color:var(--text-muted); font-size:.7rem; letter-spacing:.1em; font-family:var(--font-ui);">
+        <span>✦</span> अनायास ज्ञान
+      </button>
     </div>
   </aside>
 
   <!-- ── MAIN ── -->
-  <main id="main">
+  <main id="main" class="flex-1 min-h-screen relative" style="margin-left:var(--nav-w); padding-bottom:calc(var(--player-h) + 24px);">
+
+    <!-- Ambient orb FX -->
+    <div class="fixed pointer-events-none z-0" style="top:5%;right:-10%;width:52vw;height:52vw;background:radial-gradient(ellipse,rgba(124,58,237,.07),transparent 70%);animation:orb-drift 18s ease-in-out infinite alternate;"></div>
+    <div class="fixed pointer-events-none z-0" style="bottom:-15%;left:15%;width:36vw;height:36vw;background:radial-gradient(ellipse,rgba(244,114,182,.045),transparent 70%);animation:orb-drift 24s ease-in-out infinite alternate-reverse;"></div>
 
     <!-- HOME -->
     <section id="section-home" class="section" role="region" aria-label="Pravaah">
@@ -104,9 +187,9 @@
     </section>
 
     <!-- AMBIENT -->
-    <section id="section-ambient" class="section" role="region" aria-label="Anubhuti">
+    <section id="section-ambient" class="section" role="region" aria-label="Naad">
       <div class="section-header">
-        <div class="section-eyebrow">Anubhuti · <span class="hindi-word">अनुभूति</span></div>
+        <div class="section-eyebrow">Naad · <span class="hindi-word">नाद</span></div>
         <h1 class="section-title"><em>Surrounding</em> Sound</h1>
         <p class="section-subtitle">Background sounds for presence. Soft, looping, gentle.</p>
       </div>
@@ -114,7 +197,7 @@
     </section>
 
     <!-- VIDEOS -->
-    <section id="section-videos" class="section" role="region" aria-label="Videos">
+    <section id="section-videos" class="section" role="region" aria-label="Drishya">
       <div class="section-header">
         <div class="section-eyebrow">Drishya · <span class="hindi-word">दृश्य</span></div>
         <h1 class="section-title"><em>Moving</em> Light</h1>
@@ -126,7 +209,7 @@
     <!-- ECHO -->
     <section id="section-echo" class="section" role="region" aria-label="Echo">
       <div class="section-header">
-        <div class="section-eyebrow">Echo · <span class="hindi-word">प्रतिध्वनि</span></div>
+        <div class="section-eyebrow">Pratidhvani · <span class="hindi-word">प्रतिध्वनि</span></div>
         <h1 class="section-title">Words That <em>Remain</em></h1>
         <p class="section-subtitle">Writings and teachings. Read slowly. Let them settle.</p>
       </div>
@@ -134,9 +217,9 @@
     </section>
 
     <!-- IMAGES -->
-    <section id="section-images" class="section" role="region" aria-label="Drishya">
+    <section id="section-images" class="section" role="region" aria-label="Drishti">
       <div class="section-header">
-        <div class="section-eyebrow">Drishya · <span class="hindi-word">दृश्य</span></div>
+        <div class="section-eyebrow">Drishti · <span class="hindi-word">दृष्टि</span></div>
         <h1 class="section-title">What Is <em>Seen</em></h1>
         <p class="section-subtitle">Still images for still minds. Gaze without grasping.</p>
       </div>
@@ -144,9 +227,9 @@
     </section>
 
     <!-- BOOKS -->
-    <section id="section-books" class="section" role="region" aria-label="Books">
+    <section id="section-books" class="section" role="region" aria-label="Granth">
       <div class="section-header">
-        <div class="section-eyebrow">Pustaka · <span class="hindi-word">पुस्तक</span></div>
+        <div class="section-eyebrow">Granth · <span class="hindi-word">ग्रंथ</span></div>
         <h1 class="section-title"><em>Deeper</em> Waters</h1>
         <p class="section-subtitle">Full texts. Not for speed-reading.</p>
       </div>
@@ -158,12 +241,9 @@
 
 <!-- ══════════════════════════════════════════════
      AUDIO PLAYER BAR
-     Desktop: 2 rows (seek + controls)
-     Mobile:  3 rows (thumb+title | seek | transport)
 ══════════════════════════════════════════════ -->
 <div id="bottom-player" role="region" aria-label="Audio player">
 
-  <!-- Row 1: Thumbnail + Title -->
   <div class="player-top-row">
     <img id="player-thumb" src="" alt="Now playing">
     <div class="player-info">
@@ -172,7 +252,6 @@
     </div>
   </div>
 
-  <!-- Row 2: Seek bar with times -->
   <div class="player-seek-row">
     <span class="player-time" id="time-elapsed">0:00</span>
     <div class="seek-track" role="slider" aria-label="Seek position">
@@ -182,7 +261,6 @@
     <span class="player-time right" id="time-remain">0:00</span>
   </div>
 
-  <!-- Row 3: All Controls in ONE row -->
   <div class="player-controls-row">
     <button class="btn-skip" id="btn-skip-back" title="−10 seconds">−10</button>
     <button class="btn-prev-next" id="btn-prev" title="Previous" aria-label="Previous">
@@ -203,9 +281,7 @@
       </svg>
     </button>
     <button class="btn-skip" id="btn-skip-fwd" title="+10 seconds">+10</button>
-
     <button id="btn-speed" title="Playback speed" aria-label="Playback speed">1×</button>
-
     <div class="player-vol">
       <button class="btn-vol-icon" id="btn-vol-mute" title="Volume" aria-label="Volume">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -215,7 +291,6 @@
       </button>
       <input type="range" id="player-volume" min="0" max="100" value="85" aria-label="Volume" class="desktop-vol-slider">
     </div>
-
     <a id="player-download" href="#" title="Download" aria-label="Download">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -226,7 +301,7 @@
   </div>
 </div>
 
-<!-- Volume Popup — audio player (icon click) -->
+<!-- Volume Popup — audio player -->
 <div id="vol-popup" class="vol-popup" role="dialog" aria-label="Audio volume">
   <div class="vol-popup-label">
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -239,7 +314,7 @@
   <div class="vol-popup-value" id="vol-popup-value">85%</div>
 </div>
 
-<!-- Volume Popup — ambient player (icon click) -->
+<!-- Volume Popup — ambient -->
 <div id="aw-vol-popup" class="vol-popup aw-vol-popup" role="dialog" aria-label="Ambient volume">
   <div class="vol-popup-label">
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -280,21 +355,18 @@
 
 <!-- Hidden audio elements -->
 <audio id="main-audio"    preload="metadata" style="display:none;"></audio>
-<audio id="ambient-audio" preload="none" style="display:none;"></audio>
+<audio id="ambient-audio" preload="none"     style="display:none;"></audio>
 
-<!-- ══════════════════════════════════════════════
-     LOADING TOAST ① (spinner + %)
-══════════════════════════════════════════════ -->
+<!-- Loading Toast -->
 <div id="loading-toast" role="status" aria-live="polite">
   <div class="lt-spinner"></div>
   <div class="lt-text">Loading… <span id="lt-pct"></span></div>
 </div>
 
 <!-- ══════════════════════════════════════════════
-     AMBIENT WIDGET — draggable, blur modes ⑤⑥
+     AMBIENT WIDGET
 ══════════════════════════════════════════════ -->
 <div id="ambient-widget" role="region" aria-label="Ambient player">
-
   <div class="aw-header">
     <div class="aw-drag-dots">
       <span></span><span></span>
@@ -304,16 +376,12 @@
     <span class="aw-label">Ambient</span>
     <button class="aw-close" id="aw-close" aria-label="Hide widget">✕</button>
   </div>
-
-  <!-- Thumbnail + Title row -->
   <div class="aw-info-row">
     <div class="aw-thumb-wrap" id="aw-thumb-wrap">
       <div class="aw-img-empty">〰</div>
     </div>
     <div class="aw-title" id="aw-title">—</div>
   </div>
-
-  <!-- Seek slider -->
   <div class="aw-seek-row">
     <span class="aw-time" id="aw-time-elapsed">0:00</span>
     <div class="aw-seek-track" id="aw-seek-track">
@@ -322,27 +390,20 @@
     </div>
     <span class="aw-time" id="aw-time-remain">0:00</span>
   </div>
-
   <div class="aw-controls">
-    <!-- Prev ambient -->
     <button class="btn-prev-next" id="aw-prev" style="width:26px;height:26px;color:var(--text-muted);" title="Previous" aria-label="Previous">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
         <polygon points="19,20 9,12 19,4"/><line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2"/>
       </svg>
     </button>
-
-    <!-- Next ambient -->
     <button class="btn-prev-next" id="aw-next" style="width:26px;height:26px;color:var(--text-muted);" title="Next" aria-label="Next">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
         <polygon points="5,4 15,12 5,20"/><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"/>
       </svg>
     </button>
-
     <button class="aw-play-btn" id="aw-play-btn" aria-label="Play or pause">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
     </button>
-
-    <!-- Volume icon → opens popup -->
     <button class="aw-vol-btn" id="aw-vol-btn" title="Volume" aria-label="Volume">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
@@ -356,15 +417,12 @@
 </div>
 
 <!-- ══════════════════════════════════════════════
-     PDF READER MODAL ② (canvas-based, no iframe)
+     PDF READER MODAL
 ══════════════════════════════════════════════ -->
 <div id="pdf-modal" role="dialog" aria-modal="true" aria-label="PDF reader">
-
-  <!-- Progress bar -->
   <div class="pdf-progress-bar">
     <div class="pdf-progress-fill"></div>
   </div>
-
   <div class="pdf-modal-header">
     <div>
       <div id="pdf-modal-title">—</div>
@@ -374,7 +432,6 @@
         <input id="pdf-page-num" type="number" min="1" value="1" aria-label="Page number">
         of <span id="pdf-total-pages">?</span>
         <button id="pdf-next-page" aria-label="Next page">⟩</button>
-        <!-- Loading indicator inside PDF header -->
         <span class="pdf-loader" aria-live="polite">
           <span class="lt-spinner"></span>
           Rendering…
@@ -386,31 +443,22 @@
       <button id="pdf-close-btn" class="btn-glow" style="font-size:.63rem;padding:7px 13px;">✕ Close</button>
     </div>
   </div>
-
-  <!-- Scrollable canvas area — all pages rendered here by pdf.js -->
   <div id="pdf-container" aria-label="PDF content"></div>
-
 </div>
 
 <!-- ══════════════════════════════════════════════
-     IMAGE LIGHTBOX ③ (with prev/next navigation)
+     IMAGE LIGHTBOX
 ══════════════════════════════════════════════ -->
 <div id="lightbox" role="dialog" aria-modal="true" aria-label="Image viewer">
   <button id="lightbox-close" aria-label="Close">✕</button>
-
-  <!-- Zoom controls -->
   <div class="lightbox-zoom-controls">
     <button class="lb-zoom-btn" id="lb-zoom-in" title="Zoom in" aria-label="Zoom in">+</button>
     <button class="lb-zoom-btn" id="lb-zoom-reset" title="Reset zoom" aria-label="Reset zoom">↺</button>
     <button class="lb-zoom-btn" id="lb-zoom-out" title="Zoom out" aria-label="Zoom out">−</button>
   </div>
-
-  <!-- Navigation arrows -->
   <button class="lightbox-nav" id="lb-prev" aria-label="Previous image">‹</button>
   <button class="lightbox-nav" id="lb-next" aria-label="Next image">›</button>
-
   <img id="lightbox-img" src="" alt="">
-
   <div class="lightbox-actions">
     <span id="lightbox-caption"></span>
     <span class="lightbox-counter" id="lb-counter"></span>
@@ -419,14 +467,13 @@
 </div>
 
 <!-- ══════════════════════════════════════════════
-     VIDEO MODAL ④ (with prev/next navigation)
+     VIDEO MODAL
 ══════════════════════════════════════════════ -->
 <div id="video-modal" role="dialog" aria-modal="true" aria-label="Video player">
   <div class="video-modal-inner">
     <button class="video-modal-close" aria-label="Close video">✕ Close</button>
     <video id="modal-video" controls playsinline></video>
   </div>
-  <!-- Video navigation — below the player -->
   <div class="video-nav">
     <button class="video-nav-btn" id="vid-prev" aria-label="Previous video">⟨ Previous</button>
     <button class="video-nav-btn" id="vid-next" aria-label="Next video">Next ⟩</button>
@@ -446,7 +493,6 @@
       <button class="btn-glow" id="reader-close-top" style="font-size:.63rem;padding:6px 12px;">✕ Close</button>
     </div>
   </div>
-  <!-- Reading progress bar -->
   <div class="reader-progress-wrap">
     <div class="reader-progress-fill"></div>
   </div>
@@ -462,7 +508,6 @@
 <div id="about-modal" role="dialog" aria-modal="true" aria-label="About ShunyaSpace">
   <div class="about-inner">
     <button class="about-close" id="about-close" aria-label="Close">✕</button>
-
     <div class="about-logo-wrap">
       <img src="logo.png" alt="ShunyaSpace" class="about-logo-img"
            onerror="this.style.display='none';document.getElementById('about-glyph-fallback').style.display='block'">
@@ -470,7 +515,6 @@
     </div>
     <div class="about-name">ShunyaSpace</div>
     <div class="about-divider"></div>
-
     <div class="about-body">
       <p>
         शून्य (Shunya) means <em>zero</em>, <em>void</em>, <em>emptiness</em> —
@@ -486,7 +530,6 @@
         all of which point to the same wordless thing.
       </p>
     </div>
-
     <div class="about-footer">A silence you can enter &nbsp;·&nbsp; शून्य</div>
   </div>
 </div>
