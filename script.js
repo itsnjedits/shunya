@@ -15,15 +15,14 @@
 'use strict';
 
 /* ─── FALLBACK NAV ─────────────────────────────────────── */
-/* All labels use the Hindi/Sanskrit spiritual names as specified */
 const FALLBACK_NAV = [
-  { id:'home',    label:'प्रवाह',       icon:'◌',  hint:'The flow',           hindi:true },
-  { id:'audios',  label:'श्रवण',        icon:'◑',  hint:'What is heard',      hindi:true },
-  { id:'ambient', label:'नाद',          icon:'〰', hint:'Surrounding sound',   hindi:true },
-  { id:'videos',  label:'दृश्य',        icon:'▷',  hint:'Moving light',       hindi:true },
-  { id:'echo',    label:'प्रतिध्वनि',   icon:'∿',  hint:'Words that remain',  hindi:true },
-  { id:'images',  label:'दृष्टि',       icon:'◎',  hint:'What is seen',       hindi:true },
-  { id:'books',   label:'ग्रंथ',        icon:'⊟',  hint:'Deeper waters',      hindi:true },
+  { id:'home',    label:'Pravaah',      icon:'◌',  hint:'The flow' },
+  { id:'audios',  label:'Shravan',      icon:'◑',  hint:'What is heard' },
+  { id:'ambient', label:'अनुभूति',      icon:'〰', hint:'Surrounding sound' },
+  { id:'videos',  label:'दृश्य',        icon:'▷',  hint:'Moving light' },
+  { id:'echo',    label:'प्रतिध्वनि',   icon:'∿',  hint:'Words that remain' },
+  { id:'images',  label:'Drishya',      icon:'◎',  hint:'What is seen' },
+  { id:'books',   label:'पुस्तक',       icon:'⊟',  hint:'Deeper waters' },
 ];
 
 /* ─── STATE ────────────────────────────────────────────── */
@@ -299,7 +298,7 @@ function initNav() {
     <li class="nav-item">
       <a href="#" class="nav-link" data-section="${n.id}" aria-label="${n.label}">
         <span class="nav-icon">${n.icon}</span>
-        <span class="nav-label${n.hindi ? ' hindi' : ''}">${n.label}</span>
+        <span class="nav-label">${n.label}</span>
         <span class="nav-hint">${n.hint}</span>
       </a>
     </li>`).join('');
@@ -1569,38 +1568,15 @@ function randomWisdom() {
 }
 
 /* ─── ABOUT MODAL ──────────────────────────────────────── */
-function openAboutModal() {
-  DOM.aboutModal?.classList.add('open');
-}
-
 function initAboutModal() {
-  // Sidebar logo + name → open About
-  document.querySelector('.sidebar-logo')?.addEventListener('click', openAboutModal);
-  document.querySelector('.sidebar-logo')?.addEventListener('keydown', e => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAboutModal(); }
-  });
-
-  // Mobile topbar: name + logo → open About
-  document.getElementById('mobile-topbar-name')?.addEventListener('click', openAboutModal);
-  document.getElementById('mobile-topbar-name')?.addEventListener('keydown', e => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAboutModal(); }
-  });
-  const mLogo = document.getElementById('mobile-topbar-logo');
-  if (mLogo) {
-    mLogo.style.pointerEvents = 'auto';
-    mLogo.addEventListener('click', openAboutModal);
-    mLogo.addEventListener('keydown', e => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAboutModal(); }
-    });
-  }
-
-  // Close button
+  document.querySelector('.sidebar-logo')?.addEventListener('click', () =>
+    DOM.aboutModal?.classList.add('open')
+  );
   document.getElementById('about-close')?.addEventListener('click', () =>
     DOM.aboutModal?.classList.remove('open')
   );
-  // Click outside to close
   DOM.aboutModal?.addEventListener('click', e => {
-    if (e.target === DOM.aboutModal) DOM.aboutModal.classList.remove('open');
+    if (e.target===DOM.aboutModal) DOM.aboutModal.classList.remove('open');
   });
 }
 
