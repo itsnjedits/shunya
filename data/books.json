@@ -5,23 +5,29 @@
     {
       "id": "book_1",
       "title": "Creativity",
-      "file": "CREATIVITY.pdf",
-      "thumbnail": "thumbnails/CREATIVITY.jpg"
+      "file": "Creativity.pdf",
+      "thumbnail": "thumbnails/Creativity.jpg"
     },
     {
       "id": "book_2",
+      "title": "Tantrik Shuddhi Ka Aadhar",
+      "file": "Tantrik Shuddhi Ka Aadhar.pdf",
+      "thumbnail": "thumbnails/Tantrik Shuddhi Ka Aadhar.jpg"
+    },
+    {
+      "id": "book_3",
       "title": "The Book Of Man",
       "file": "The Book Of Man.pdf",
       "thumbnail": "thumbnails/The Book Of Man.jpg"
     },
     {
-      "id": "book_3",
+      "id": "book_4",
       "title": "The Rebel",
       "file": "The Rebel.pdf",
       "thumbnail": "thumbnails/The Rebel.jpg"
     },
     {
-      "id": "book_4",
+      "id": "book_5",
       "title": "The Secret",
       "file": "The Secret.pdf",
       "thumbnail": "thumbnails/The Secret.jpg"

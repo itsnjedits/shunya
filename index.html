@@ -26,8 +26,10 @@
 
 <body>
 
-<!-- Stars -->
-<canvas id="stars-canvas" style="position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.65;"></canvas>
+/* Stars */
+<canvas id="stars-canvas" style="position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.7;"></canvas>
+<!-- Breathing right-side particles canvas -->
+<canvas id="orbs-canvas" style="position:fixed;inset:0;pointer-events:none;z-index:0;opacity:1;"></canvas>
 
 <!-- ══════════════════════════════════════════════
      MOBILE TOPBAR — fixes hamburger/logo overlap
@@ -54,12 +56,14 @@
 
     <div class="sidebar-logo" role="button" tabindex="0"
          aria-label="About ShunyaSpace" title="About ShunyaSpace">
-      <div class="logo-mark">
-        <img src="/shunya/logo.png" alt="ShunyaSpace logo" class="logo-img"
-             onerror="this.parentElement.innerHTML='<svg viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'><defs><radialGradient id=\'lg\' cx=\'50%\' cy=\'50%\' r=\'50%\'><stop offset=\'0%\' stop-color=\'#c084fc\' stop-opacity=\'.8\'/><stop offset=\'100%\' stop-color=\'#7c3aed\' stop-opacity=\'.2\'/></radialGradient></defs><circle cx=\'30\' cy=\'30\' r=\'28\' fill=\'none\' stroke=\'#7c3aed\' stroke-width=\'.7\' opacity=\'.5\'/><circle cx=\'30\' cy=\'30\' r=\'18\' fill=\'none\' stroke=\'#c084fc\' stroke-width=\'.5\' opacity=\'.35\'/><circle cx=\'30\' cy=\'30\' r=\'8\' fill=\'url(%23lg)\'/><circle cx=\'30\' cy=\'30\' r=\'2.5\' fill=\'#e9d5ff\'/></svg>'">
+      <div class="logo-lockup">
+        <div class="logo-mark">
+          <img src="shunya/logo.png" alt="ShunyaSpace logo" class="logo-img"
+               onerror="this.parentElement.innerHTML='<svg viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'><defs><radialGradient id=\'lg\' cx=\'50%\' cy=\'50%\' r=\'50%\'><stop offset=\'0%\' stop-color=\'#c084fc\' stop-opacity=\'.8\'/><stop offset=\'100%\' stop-color=\'#7c3aed\' stop-opacity=\'.2\'/></radialGradient></defs><circle cx=\'30\' cy=\'30\' r=\'28\' fill=\'none\' stroke=\'#7c3aed\' stroke-width=\'.7\' opacity=\'.5\'/><circle cx=\'30\' cy=\'30\' r=\'18\' fill=\'none\' stroke=\'#c084fc\' stroke-width=\'.5\' opacity=\'.35\'/><circle cx=\'30\' cy=\'30\' r=\'8\' fill=\'url(%23lg)\'/><circle cx=\'30\' cy=\'30\' r=\'2.5\' fill=\'#e9d5ff\'/></svg>'">
+        </div>
+        <div id="logo-name" class="logo-name">ShunyaSpace</div>
       </div>
-      <div id="logo-name" class="logo-name">ShunyaSpace</div>
-      <div id="logo-sub"  class="logo-sub">शून्य — the void that holds everything</div>
+      <div id="logo-sub" class="logo-sub" style="display:none" aria-hidden="true"></div>
     </div>
 
     <nav aria-label="Site sections">
@@ -112,7 +116,7 @@
     <!-- VIDEOS -->
     <section id="section-videos" class="section" role="region" aria-label="Videos">
       <div class="section-header">
-        <div class="section-eyebrow">Videos</div>
+        <div class="section-eyebrow">Drishya · <span class="hindi-word">दृश्य</span></div>
         <h1 class="section-title"><em>Moving</em> Light</h1>
         <p class="section-subtitle">Rare recordings. Watch once, slowly.</p>
       </div>
@@ -142,7 +146,7 @@
     <!-- BOOKS -->
     <section id="section-books" class="section" role="region" aria-label="Books">
       <div class="section-header">
-        <div class="section-eyebrow">Books</div>
+        <div class="section-eyebrow">Pustaka · <span class="hindi-word">पुस्तक</span></div>
         <h1 class="section-title"><em>Deeper</em> Waters</h1>
         <p class="section-subtitle">Full texts. Not for speed-reading.</p>
       </div>
@@ -459,7 +463,11 @@
   <div class="about-inner">
     <button class="about-close" id="about-close" aria-label="Close">✕</button>
 
-    <div class="about-glyph">शून्य</div>
+    <div class="about-logo-wrap">
+      <img src="shunya/logo.png" alt="ShunyaSpace" class="about-logo-img"
+           onerror="this.style.display='none';document.getElementById('about-glyph-fallback').style.display='block'">
+      <div class="about-glyph" id="about-glyph-fallback" style="display:none">शून्य</div>
+    </div>
     <div class="about-name">ShunyaSpace</div>
     <div class="about-divider"></div>
 

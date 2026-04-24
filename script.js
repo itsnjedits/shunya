@@ -1,33 +1,28 @@
 /* ═══════════════════════════════════════════════════════════
-   ShunyaSpace — script.js  (v7)
+   ShunyaSpace — script.js  (v8)
 
-   NEW IN v7:
-   ① Loading toast with spinner + % for audio/ambient
-   ② PDF.js canvas-based reader (no iframe) with scroll progress
-   ③ Image lightbox prev/next navigation
-   ④ Video modal prev/next navigation
-   ⑤ Ambient widget — close hides UI only, does NOT stop audio
-   ⑥ Ambient widget — image show/blur/hide toggle
-   ⑦ Download overlay on ALL cards
-   ⑧ Random Wisdom on Home → stays home, opens modal
-   ⑨ Resume card thumbnails shown
-   ⑩ Mobile sidebar: overlay click closes it
-   ⑪ Section titles use English font (no Hindi on badges)
-   ⑫ Home quote fade with "Opening something magical…" flash
-   ⑬ Video saved progress tracking
+   NEW IN v8:
+   ① Logo breathing animation synced
+   ② Quotes fetched from shunya/data/quotes.json
+   ③ Play indicator only on audio / video / ambient cards
+   ④ Random wisdom fixed for ambient + books + all sections
+   ⑤ Cursor interaction with background orbs (subtle)
+   ⑥ FALLBACK_NAV updated with Hindi sidebar labels
+   ⑦ Logo path fix, About modal logo
+   ⑧ Text contrast improvements via CSS
 ═══════════════════════════════════════════════════════════ */
 
 'use strict';
 
 /* ─── FALLBACK NAV ─────────────────────────────────────── */
 const FALLBACK_NAV = [
-  { id:'home',    label:'Pravaah',   icon:'◌',  hint:'The flow' },
-  { id:'audios',  label:'Shravan',   icon:'◑',  hint:'What is heard' },
-  { id:'ambient', label:'Anubhuti',  icon:'〰', hint:'Surrounding sound' },
-  { id:'videos',  label:'Videos',    icon:'▷',  hint:'Moving light' },
-  { id:'echo',    label:'Echo',      icon:'∿',  hint:'Words that remain' },
-  { id:'images',  label:'Drishya',   icon:'◎',  hint:'What is seen' },
-  { id:'books',   label:'Books',     icon:'⊟',  hint:'Deeper waters' },
+  { id:'home',    label:'Pravaah',      icon:'◌',  hint:'The flow' },
+  { id:'audios',  label:'Shravan',      icon:'◑',  hint:'What is heard' },
+  { id:'ambient', label:'अनुभूति',      icon:'〰', hint:'Surrounding sound' },
+  { id:'videos',  label:'दृश्य',        icon:'▷',  hint:'Moving light' },
+  { id:'echo',    label:'प्रतिध्वनि',   icon:'∿',  hint:'Words that remain' },
+  { id:'images',  label:'Drishya',      icon:'◎',  hint:'What is seen' },
+  { id:'books',   label:'पुस्तक',       icon:'⊟',  hint:'Deeper waters' },
 ];
 
 /* ─── STATE ────────────────────────────────────────────── */
@@ -185,8 +180,12 @@ let _loadingTimeout = null;
 
 function showLoadingToast(msg = 'Loading…') {
   if (!DOM.loadingToast) return;
-  DOM.loadingToast.querySelector('.lt-text').childNodes[0].textContent = msg + ' ';
-  if (DOM.ltPct) DOM.ltPct.textContent = '';
+  const textEl = DOM.loadingToast.querySelector('.lt-text');
+  if (textEl) {
+    // Support HTML in msg (e.g. <em> for restore message)
+    textEl.innerHTML = msg + ' <span id="lt-pct"></span>';
+  }
+  DOM.ltPct = document.getElementById('lt-pct');
   DOM.loadingToast.classList.add('show');
   // Safety: always hide after 15s even if load hangs
   clearTimeout(_loadingTimeout);
@@ -270,8 +269,9 @@ async function loadAllData() {
   State.audio.list   = State.data.audios;
   State.videoList    = State.data.videos;
 
-  // Fetch quotes from /shunya/quotes.json, fall back to home.json, then hardcoded
-  const quotesJson = await fetchJSON('/shunya/quotes.json', true);
+  // Fetch quotes from shunya/data/quotes.json, fall back to home.json, then hardcoded
+  const quotesJson = await fetchJSON('shunya/data/quotes.json', true)
+                  || await fetchJSON('data/quotes.json', true);
   const FALLBACK_QUOTES = [
     {text:'The quieter you become, the more you can hear.', author:'Ram Dass'},
     {text:'Emptiness is not a void. It is the ground of being.', author:'Krishnamurti'},
@@ -335,8 +335,8 @@ function renderSection(id) {
   })[id]?.();
 }
 
-/* ─── CARD BUILDER (with download overlay ⑦) ─────────── */
-function buildCard(item, {badge='',delay=0,extraClass=''} = {}) {
+/* ─── CARD BUILDER (with download overlay + conditional play indicator) ── */
+function buildCard(item, {badge='', delay=0, extraClass='', showPlay=false} = {}) {
   const progress = getItemProgress(item);
   const thumb = item.thumbnailUrl
     ? `<img data-src="${item.thumbnailUrl}" alt="" loading="lazy">`
@@ -347,9 +347,16 @@ function buildCard(item, {badge='',delay=0,extraClass=''} = {}) {
   const dlOverlay = item.url
     ? `<a href="${item.url}" download="${item.file||''}" class="card-dl-overlay" title="Download" onclick="event.stopPropagation()">↓</a>`
     : '';
+  // Play indicator only for media types (audio / video / ambient)
+  const playIndicator = showPlay ? `
+    <div class="card-play-indicator">
+      <div class="card-play-circle">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="rgba(255,255,255,.95)"><polygon points="5,3 19,12 5,21"/></svg>
+      </div>
+    </div>` : '';
   return `
     <div class="content-card animate-in ${extraClass}" data-id="${item.id}" style="animation-delay:${delay}s">
-      <div class="card-thumb">${thumb}${progressBar}${dlOverlay}</div>
+      <div class="card-thumb">${thumb}${playIndicator}${progressBar}${dlOverlay}</div>
       <div class="card-info">
         ${badge ? `<span class="card-badge">${badge}</span>` : ''}
         <div class="card-title">${item.title||item.file||'—'}</div>
@@ -504,7 +511,7 @@ function renderAudios() {
   const audios = State.data.audios;
   if (!audios.length) { C.innerHTML = emptyState('◑','No audios. Add .mp3 files to <code>shunya_data/audios/</code> and run <code>generate_json.py</code>'); return; }
   C.innerHTML = `<div class="content-grid">${
-    audios.map((a,i) => buildCard(a,{badge:'Audio',delay:i*.05,extraClass:State.audio.currentId===a.id?'is-active':''})).join('')
+    audios.map((a,i) => buildCard(a,{badge:'Audio',delay:i*.05,showPlay:true,extraClass:State.audio.currentId===a.id?'is-active':''})).join('')
   }</div>`;
   lazyLoad(C);
   C.querySelectorAll('.content-card').forEach(card =>
@@ -743,7 +750,7 @@ function renderVideos() {
   const videos = State.data.videos;
   if (!videos.length) { C.innerHTML = emptyState('▷','No videos. Add files to <code>shunya_data/videos/</code> and run <code>generate_json.py</code>'); return; }
   C.innerHTML = `<div class="content-grid">${
-    videos.map((v,i) => buildCard(v,{badge:'Video',delay:i*.06})).join('')
+    videos.map((v,i) => buildCard(v,{badge:'Video',delay:i*.06,showPlay:true})).join('')
   }</div>`;
   lazyLoad(C);
   C.querySelectorAll('.content-card').forEach(card => {
@@ -834,16 +841,28 @@ function openEchoById(id) {
 async function openTxtReader(item) {
   document.getElementById('reader-doc-title').textContent = item.title||item.file||'—';
   document.getElementById('reader-eyebrow').textContent   = 'Echo · Writing';
-  DOM.readerContent.textContent = 'Loading…';
+  DOM.readerContent.textContent = '';
   DOM.txtReader.classList.add('open');
   const wrap = document.querySelector('.reader-content-wrap');
+
+  const hasSaved = Store.getTxtScroll(item.id) > 0;
+  if (hasSaved) {
+    showLoadingToast('<em>Restoring your last position…</em>');
+  } else {
+    showLoadingToast('Opening…');
+  }
 
   try {
     const r = await fetch(item.url);
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     DOM.readerContent.textContent = await r.text();
-    setTimeout(() => { wrap.scrollTop = Store.getTxtScroll(item.id); }, 80);
+    const savedScroll = Store.getTxtScroll(item.id);
+    setTimeout(() => {
+      if (savedScroll > 0) wrap.scrollTop = savedScroll;
+      setTimeout(() => hideLoadingToast(), hasSaved ? 600 : 0);
+    }, 80);
   } catch(e) {
+    hideLoadingToast();
     console.warn('[Shunya] TXT fail:', item.url, e.message);
     DOM.readerContent.textContent = `${item.title||''}\n\n[Could not load: ${item.url}]\n\nRun from a local web server.`;
   }
@@ -877,7 +896,13 @@ async function openPdfModal(item) {
   if (DOM.pdfProgressFill) DOM.pdfProgressFill.style.width = '0%';
   DOM.pdfModal.classList.add('open');
 
-  // Show loader
+  const hasSaved = Store.getPdfScroll(item.id) > 0;
+  // Show loader — with resume message if applicable
+  if (hasSaved) {
+    showLoadingToast('<em>Restoring your last position…</em>');
+  } else {
+    showLoadingToast('Opening…');
+  }
   if (DOM.pdfLoader) DOM.pdfLoader.classList.add('show');
 
   try {
@@ -907,14 +932,19 @@ async function openPdfModal(item) {
       DOM.pdfContainer.appendChild(canvas);
     }
 
-    // Restore scroll position
-    setTimeout(() => {
-      const saved = Store.getPdfScroll(item.id);
-      if (saved > 0) DOM.pdfContainer.scrollTop = saved;
-    }, 100);
+    // Restore scroll — hide toast ONLY after scroll is in place
+    const saved = Store.getPdfScroll(item.id);
+    if (saved > 0) {
+      DOM.pdfContainer.scrollTop = saved;
+      // Brief delay so user sees the restore message land, then fade
+      setTimeout(() => hideLoadingToast(), 700);
+    } else {
+      hideLoadingToast();
+    }
 
   } catch(err) {
     if (DOM.pdfLoader) DOM.pdfLoader.classList.remove('show');
+    hideLoadingToast();
     console.warn('[Shunya] PDF fail:', item.url, err.message);
     DOM.pdfContainer.innerHTML = `<div style="color:var(--text-muted);padding:40px;text-align:center;font-family:var(--font-serif)">
       <p>Could not render PDF.</p>
@@ -1127,6 +1157,14 @@ function renderAmbient() {
         <div class="ambient-np-info">
           <div class="ambient-np-label">Now playing</div>
           <div class="ambient-np-title">${active.title}</div>
+          <!-- Full seek bar synced with widget -->
+          <div class="ambient-np-seek-row">
+            <span class="ambient-np-time" id="anp-elapsed">0:00</span>
+            <div class="ambient-np-seek-track" id="anp-seek-track">
+              <div class="ambient-np-seek-fill" id="anp-seek-fill"></div>
+            </div>
+            <span class="ambient-np-time" id="anp-remain">0:00</span>
+          </div>
         </div>
         <div class="ambient-np-controls">
           <button class="ambient-vol-icon-btn" id="ambient-np-vol-btn" title="Volume" aria-label="Volume">
@@ -1134,6 +1172,11 @@ function renderAmbient() {
               <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
               <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
             </svg>
+          </button>
+          <button class="ambient-play-pause-btn" id="anp-play-btn" title="${State.ambient.isPlaying?'Pause':'Play'}">
+            ${State.ambient.isPlaying
+              ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`
+              : `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>`}
           </button>
           <button class="ambient-stop-btn">■ Stop</button>
         </div>
@@ -1144,7 +1187,7 @@ function renderAmbient() {
         return `
           <div class="ambient-card animate-in ${on?'playing':''}" data-id="${a.id}" style="animation-delay:${i*.06}s">
             ${a.thumbnailUrl
-              ? `<div class="ambient-thumb"><img data-src="${a.thumbnailUrl}" alt="${a.title}" loading="lazy"></div>`
+              ? `<div class="ambient-thumb"><img data-src="${a.thumbnailUrl}" alt="${a.title}" loading="lazy"><div class="ambient-play-indicator"><div class="card-play-circle"><svg width="14" height="14" viewBox="0 0 24 24" fill="rgba(255,255,255,.95)"><polygon points="5,3 19,12 5,21"/></svg></div></div></div>`
               : `<div class="ambient-thumb ambient-thumb--empty">〰</div>`}
             <div class="ambient-card-info">
               <div class="ambient-title">${a.title}</div>
@@ -1157,6 +1200,31 @@ function renderAmbient() {
   lazyLoad(grid);
   grid.querySelectorAll('.ambient-card').forEach(c => c.addEventListener('click', () => toggleAmbient(c.dataset.id)));
   grid.querySelector('.ambient-stop-btn')?.addEventListener('click', () => { stopAmbient(); State.rendered.delete('ambient'); renderAmbient(); });
+
+  // Full player play/pause in ambient section — synced with widget
+  const anpPlay = document.getElementById('anp-play-btn');
+  anpPlay?.addEventListener('click', () => {
+    if (!State.ambient.currentId) return;
+    if (State.ambient.isPlaying) {
+      DOM.ambientAudio.pause(); State.ambient.isPlaying = false;
+    } else {
+      DOM.ambientAudio.play().catch(()=>{}); State.ambient.isPlaying = true;
+    }
+    updateWidgetPlayIcon();
+    State.rendered.delete('ambient'); renderAmbient();
+  });
+
+  // Seek click in ambient section
+  const anpSeek = document.getElementById('anp-seek-track');
+  anpSeek?.addEventListener('click', e => {
+    if (!DOM.ambientAudio.duration) return;
+    const r = anpSeek.getBoundingClientRect();
+    DOM.ambientAudio.currentTime = ((e.clientX-r.left)/r.width)*DOM.ambientAudio.duration;
+  });
+
+  // Sync current seek position immediately on render
+  syncAmbientSectionSeek();
+
   /* Volume icon in now-playing → open aw-vol-popup */
   grid.querySelector('#ambient-np-vol-btn')?.addEventListener('click', e => {
     e.stopPropagation();
@@ -1173,6 +1241,19 @@ function renderAmbient() {
       DOM.awVolPopup.classList.add('open');
     }
   });
+}
+
+/* Sync the ambient-section seek bar (updated by timeupdate) */
+function syncAmbientSectionSeek() {
+  const dur = DOM.ambientAudio?.duration;
+  const cur = DOM.ambientAudio?.currentTime;
+  if (!dur || isNaN(dur)) return;
+  const fill    = document.getElementById('anp-seek-fill');
+  const elapsed = document.getElementById('anp-elapsed');
+  const remain  = document.getElementById('anp-remain');
+  if (fill)    fill.style.width    = ((cur/dur)*100)+'%';
+  if (elapsed) elapsed.textContent = fmt(cur);
+  if (remain)  remain.textContent  = '-'+fmt(dur-cur);
 }
 
 function toggleAmbient(id) {
@@ -1287,7 +1368,7 @@ function initAmbientControls() {
     State.rendered.delete('ambient'); renderAmbient();
   });
 
-  // Seek slider: timeupdate → update fill + time display
+  // Seek slider: timeupdate → update fill + time display (widget AND section)
   DOM.ambientAudio?.addEventListener('timeupdate', () => {
     const dur = DOM.ambientAudio.duration;
     const cur = DOM.ambientAudio.currentTime;
@@ -1298,6 +1379,8 @@ function initAmbientControls() {
     if (fill)    fill.style.width    = ((cur/dur)*100)+'%';
     if (elapsed) elapsed.textContent = fmt(cur);
     if (remain)  remain.textContent  = '-'+fmt(dur-cur);
+    // Also sync the ambient section player
+    syncAmbientSectionSeek();
   });
 
   // Seek track click
@@ -1424,61 +1507,64 @@ function initAmbientWidget() {
 function randomWisdom() {
   const current = State.currentSection;
 
-  // Pick pool from current section, or all if on home
   let pool = [];
-  if (current==='audios' || current==='home') {
-    pool = [...pool, ...State.data.audios.map(a => ({type:'audio',id:a.id}))];
-  }
-  if (current==='echo' || current==='home') {
-    pool = [...pool, ...State.data.echo.all.map(e => ({type:'echo',id:e.id}))];
-  }
-  if (current==='images' || current==='home') {
-    pool = [...pool, ...State.data.images.map(i => ({type:'image',id:i.id}))];
-  }
-  if (current==='books' || current==='home') {
-    pool = [...pool, ...State.data.books.map(b => ({type:'book',id:b.id}))];
-  }
-  if (current==='videos' || current==='home') {
-    pool = [...pool, ...State.data.videos.map(v => ({type:'video',id:v.id}))];
-  }
 
-  if (!pool.length) {
-    // Fallback: all
+  if (current === 'audios') {
+    pool = State.data.audios.map(a => ({type:'audio', id:a.id}));
+  } else if (current === 'ambient') {
+    pool = State.data.ambient.map(a => ({type:'ambient', id:a.id}));
+  } else if (current === 'videos') {
+    pool = State.data.videos.map(v => ({type:'video', id:v.id}));
+  } else if (current === 'echo') {
+    pool = State.data.echo.all.map(e => ({type:'echo', id:e.id}));
+  } else if (current === 'books') {
+    pool = State.data.books.map(b => ({type:'book', id:b.id}));
+  } else if (current === 'images') {
+    pool = State.data.images.map(i => ({type:'image', id:i.id}));
+  } else {
+    // Home (or any other) — pick from everything
     pool = [
-      ...State.data.audios.map(a => ({type:'audio',id:a.id})),
-      ...State.data.echo.all.map(e => ({type:'echo',id:e.id})),
-      ...State.data.images.map(i => ({type:'image',id:i.id})),
-      ...State.data.books.map(b => ({type:'book',id:b.id})),
+      ...State.data.audios.map(a  => ({type:'audio',   id:a.id})),
+      ...State.data.ambient.map(a => ({type:'ambient',  id:a.id})),
+      ...State.data.echo.all.map(e => ({type:'echo',   id:e.id})),
+      ...State.data.images.map(i  => ({type:'image',   id:i.id})),
+      ...State.data.books.map(b   => ({type:'book',    id:b.id})),
+      ...State.data.videos.map(v  => ({type:'video',   id:v.id})),
     ];
   }
+
   if (!pool.length) return showToast('Nothing in the library yet.');
 
-  const pick = pool[Math.floor(Math.random()*pool.length)];
+  const pick = pool[Math.floor(Math.random() * pool.length)];
   showToast('Opening something magical…');
 
   setTimeout(() => {
-    if (pick.type==='audio') {
-      // ⑧ On home: play audio without navigating
-      if (current==='home') { playAudioById(pick.id); }
-      else { navigateTo('audios'); setTimeout(()=>playAudioById(pick.id),400); }
+    if (pick.type === 'audio') {
+      if (current === 'home') { playAudioById(pick.id); }
+      else { navigateTo('audios'); setTimeout(() => playAudioById(pick.id), 400); }
     }
-    if (pick.type==='echo') {
-      if (current==='home') { const item=State.data.echo.all.find(e=>e.id===pick.id); if(item) openEchoById(pick.id); }
-      else { navigateTo('echo'); setTimeout(()=>openEchoById(pick.id),400); }
+    else if (pick.type === 'ambient') {
+      toggleAmbient(pick.id);
+      if (current !== 'ambient') navigateTo('ambient');
     }
-    if (pick.type==='image') {
-      // Open lightbox without navigating
+    else if (pick.type === 'echo') {
+      if (current === 'home') { openEchoById(pick.id); }
+      else { navigateTo('echo'); setTimeout(() => openEchoById(pick.id), 400); }
+    }
+    else if (pick.type === 'image') {
       openImageById(pick.id, true);
     }
-    if (pick.type==='book') {
-      if (current==='home') { const item=State.data.books.find(b=>b.id===pick.id); if(item) openPdfModal(item); }
-      else { navigateTo('books'); }
+    else if (pick.type === 'book') {
+      const item = State.data.books.find(b => b.id === pick.id);
+      if (!item) return;
+      if (current === 'home' || current === 'books') { openPdfModal(item); }
+      else { navigateTo('books'); setTimeout(() => openPdfModal(item), 400); }
     }
-    if (pick.type==='video') {
-      const idx = State.data.videos.findIndex(v=>v.id===pick.id);
-      if (idx>=0) openVideoModal(idx);
+    else if (pick.type === 'video') {
+      const idx = State.data.videos.findIndex(v => v.id === pick.id);
+      if (idx >= 0) openVideoModal(idx);
     }
-  }, 600);
+  }, 400);
 }
 
 /* ─── ABOUT MODAL ──────────────────────────────────────── */
@@ -1601,6 +1687,63 @@ function initStars() {
   })();
 }
 
+/* ─── FLOATING ORBS — right-side breathing presence + cursor ─ */
+function initOrbs() {
+  const cv = document.getElementById('orbs-canvas');
+  if (!cv) return;
+  const ctx = cv.getContext('2d');
+  const resize = () => { cv.width=innerWidth; cv.height=innerHeight; };
+  resize(); window.addEventListener('resize', resize);
+
+  // Cursor position, normalized 0-1 (starts at center)
+  let mouseX = 0.5, mouseY = 0.5;
+  let targetX = 0.5, targetY = 0.5;
+  document.addEventListener('mousemove', e => {
+    targetX = e.clientX / innerWidth;
+    targetY = e.clientY / innerHeight;
+  }, {passive: true});
+
+  // 4 very large, very faint orbs that drift slowly
+  const orbs = [
+    { cx:.75, cy:.25, r:.22, color:'124,58,237',   speed:.00008, phase:0,   pull:0.025 },
+    { cx:.85, cy:.60, r:.18, color:'192,132,252',  speed:.00006, phase:2.1, pull:0.018 },
+    { cx:.65, cy:.75, r:.15, color:'244,114,182',  speed:.00007, phase:4.4, pull:0.020 },
+    { cx:.90, cy:.40, r:.12, color:'129,140,248',  speed:.00009, phase:1.3, pull:0.015 },
+  ];
+
+  let t = 0;
+  (function draw() {
+    ctx.clearRect(0,0,cv.width,cv.height);
+    t += 1;
+
+    // Smoothly interpolate mouse position (very slow follow)
+    mouseX += (targetX - mouseX) * 0.04;
+    mouseY += (targetY - mouseY) * 0.04;
+
+    orbs.forEach(orb => {
+      const driftX = Math.sin(t * orb.speed * 73 + orb.phase) * 0.04;
+      const driftY = Math.cos(t * orb.speed * 59 + orb.phase * 1.3) * 0.03;
+      // Subtle pull toward cursor position (each orb with different weight)
+      const cursorPullX = (mouseX - 0.5) * orb.pull;
+      const cursorPullY = (mouseY - 0.5) * orb.pull;
+      const cx = (orb.cx + driftX + cursorPullX) * cv.width;
+      const cy = (orb.cy + driftY + cursorPullY) * cv.height;
+      const radius = orb.r * Math.min(cv.width, cv.height);
+      const opacity = 0.03 + 0.05 * (0.5 + 0.5 * Math.sin(t * orb.speed * 120 + orb.phase));
+
+      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+      grad.addColorStop(0,   `rgba(${orb.color},${(opacity * 2).toFixed(3)})`);
+      grad.addColorStop(0.5, `rgba(${orb.color},${opacity.toFixed(3)})`);
+      grad.addColorStop(1,   `rgba(${orb.color},0)`);
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  })();
+}
+
 /* ─── BOOT ──────────────────────────────────────────────── */
 async function boot() {
   cacheDom();
@@ -1620,6 +1763,7 @@ async function boot() {
   initAboutModal();
   initEscKey();
   initStars();
+  initOrbs();
   initContentProtection();
 
   document.getElementById('btn-random')?.addEventListener('click', randomWisdom);
