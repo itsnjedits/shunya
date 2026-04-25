@@ -269,9 +269,8 @@ async function loadAllData() {
   State.audio.list   = State.data.audios;
   State.videoList    = State.data.videos;
 
-  // Fetch quotes from shunya/data/quotes.json, fall back to home.json, then hardcoded
-  const quotesJson = await fetchJSON('shunya/data/quotes.json', true)
-                  || await fetchJSON('data/quotes.json', true);
+  // Fetch quotes from data/quotes.json (project root is shunya/, so no prefix needed)
+  const quotesJson = await fetchJSON('data/quotes.json', true);
   const FALLBACK_QUOTES = [
     {text:'The quieter you become, the more you can hear.', author:'Ram Dass'},
     {text:'Emptiness is not a void. It is the ground of being.', author:'Krishnamurti'},
@@ -1594,21 +1593,27 @@ function initAboutModal() {
 
 /* ─── MOBILE NAV ⑩ overlay close ──────────────────────── */
 function openSidebar() {
+  closeAllPopups();             // dismiss speed/vol popups before overlay appears
   DOM.sidebar.classList.add('open');
+  document.body.classList.add('sidebar-open');
   if (DOM.sidebarOverlay) {
     DOM.sidebarOverlay.classList.add('visible');
     requestAnimationFrame(() => requestAnimationFrame(() =>
       DOM.sidebarOverlay.classList.add('faded-in')
     ));
   }
+  document.body.style.overflow = 'hidden';
 }
 
 function closeSidebar() {
   DOM.sidebar.classList.remove('open');
+  document.body.classList.remove('sidebar-open');
   if (DOM.sidebarOverlay) {
     DOM.sidebarOverlay.classList.remove('faded-in');
     setTimeout(() => DOM.sidebarOverlay.classList.remove('visible'), 350);
   }
+  // Restore body scroll
+  document.body.style.overflow = '';
 }
 
 function initMobileNav() {
@@ -1616,7 +1621,15 @@ function initMobileNav() {
     DOM.sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
   });
   DOM.sidebarOverlay?.addEventListener('click', closeSidebar);
-  window.addEventListener('resize', () => { State.isMobile = innerWidth < 900; });
+  window.addEventListener('resize', () => {
+    State.isMobile = innerWidth < 900;
+    // Auto-close sidebar when resizing to desktop
+    if (!State.isMobile && DOM.sidebar.classList.contains('open')) closeSidebar();
+  });
+  // Mobile topbar logo tap → About modal (inline — openAbout is not a named function)
+  document.getElementById('mobile-topbar-logo')?.addEventListener('click', () =>
+    DOM.aboutModal?.classList.add('open')
+  );
 }
 
 /* ─── CONTENT PROTECTION ───────────────────────────────── */
@@ -1756,35 +1769,50 @@ function initOrbs() {
   })();
 }
 
+/* ─── SAFE INIT HELPER ──────────────────────────────────── */
+function safeInit(label, fn) {
+  try { fn(); }
+  catch(e) { console.error(`[Shunya] ${label} failed:`, e); }
+}
+
 /* ─── BOOT ──────────────────────────────────────────────── */
 async function boot() {
-  cacheDom();
-  await loadAllData();
+  try {
+    cacheDom();
+    await loadAllData();
+  } catch(e) {
+    console.error('[Shunya] boot/data error:', e);
+  }
 
-  initSiteMeta();
-  initNav();
-  initPlayerBar();
-  bindAudioEvents();
-  initVideoModal();
-  initTxtReader();
-  initPdfModal();
-  initLightbox();
-  initMobileNav();
-  initAmbientControls();
-  initAmbientWidget();
-  initAboutModal();
-  initEscKey();
-  initStars();
-  initOrbs();
-  initContentProtection();
+  safeInit('siteMeta',         initSiteMeta);
+  safeInit('nav',              initNav);
+  safeInit('playerBar',        initPlayerBar);
+  safeInit('audioEvents',      bindAudioEvents);
+  safeInit('videoModal',       initVideoModal);
+  safeInit('txtReader',        initTxtReader);
+  safeInit('pdfModal',         initPdfModal);
+  safeInit('lightbox',         initLightbox);
+  safeInit('mobileNav',        initMobileNav);
+  safeInit('ambientControls',  initAmbientControls);
+  safeInit('ambientWidget',    initAmbientWidget);
+  safeInit('aboutModal',       initAboutModal);
+  safeInit('escKey',           initEscKey);
+  safeInit('stars',            initStars);
+  safeInit('orbs',             initOrbs);
+  safeInit('contentProtect',   initContentProtection);
 
   document.getElementById('btn-random')?.addEventListener('click', randomWisdom);
 
-  navigateTo('home');
-  if (DOM.app) DOM.app.style.opacity = '1';
+  try {
+    navigateTo('home');
+    if (DOM.app) DOM.app.style.opacity = '1';
+  } catch(e) {
+    console.error('[Shunya] navigation error:', e);
+    if (DOM.app) DOM.app.style.opacity = '1'; // always show the app
+  }
 }
 
-if (document.readyState==='loading') {
+if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', boot);
 } else {
   boot();

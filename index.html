@@ -19,19 +19,28 @@
   <meta name="msapplication-TileImage" content="pwa_icon/splash.png">
 
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!--
+    Tailwind CSS — CDN build (development only).
+    The "should not be used in production" warning is expected here.
+    For production: replace with a PostCSS/Vite build step.
+  -->
+  <script>
+    /* Silence the Tailwind CDN production warning in dev console */
+    window.__TAILWIND_SUPPRESS_PRODUCTION_WARNING__ = true;
+  </script>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
   <script>
     tailwind.config = {
+      corePlugins: { preflight: false }, /* styles.css owns the reset */
       theme: {
         extend: {
           colors: {
-            void: '#07060f',
-            deep: '#0d0b1a',
+            void:    '#07060f',
+            deep:    '#0d0b1a',
             surface: '#13111f',
-            raised: '#1a1729',
-            violet: '#7c3aed',
-            orchid: '#c084fc',
+            raised:  '#1a1729',
+            violet:  '#7c3aed',
+            orchid:  '#c084fc',
           }
         }
       }
@@ -50,19 +59,19 @@
 <canvas id="orbs-canvas" style="position:fixed;inset:0;pointer-events:none;z-index:0;opacity:1;"></canvas>
 
 <!-- ══════════════════════════════════════════════
-     MOBILE TOPBAR — fixes hamburger/logo overlap
+     MOBILE TOPBAR
      Only visible on screens < 900px
 ══════════════════════════════════════════════ -->
 <div id="mobile-topbar" aria-label="Mobile navigation bar">
-  <button id="mobile-menu-toggle" aria-label="Open menu" class="flex flex-col gap-[5px] items-center justify-center p-[6px]">
+  <button id="mobile-menu-toggle" aria-label="Open menu">
     <span></span><span></span><span></span>
   </button>
   <span id="mobile-topbar-name"
         role="button" tabindex="0"
         aria-label="About ShunyaSpace"
         title="About ShunyaSpace">ShunyaSpace</span>
-  <!-- Spacer to balance hamburger on left -->
-  <span class="w-[32px]" aria-hidden="true"></span>
+  <img src="logo.png" alt="ShunyaSpace" id="mobile-topbar-logo"
+       onerror="this.style.display='none'">
 </div>
 
 <!-- Mobile sidebar overlay (click closes sidebar) -->
@@ -99,7 +108,7 @@
           <span class="ambient-mini-stop" title="Stop ambient">✕</span>
         </div>
       </div>
-      <button id="btn-random"><span>✦</span> अनायास ज्ञान</button>
+      <button id="btn-random"><span>✦</span> Random Wisdom</button>
     </div>
   </aside>
 
