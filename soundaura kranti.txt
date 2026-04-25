@@ -1,0 +1,38 @@
+
+git init
+git add .
+git commit -m "initial commit"
+
+git branch -M main
+git remote add origin https://github.com/itsnjedits/audios.git
+git push -u origin main
+
+
+git add .
+git commit -m "-"
+git push origin main
+
+shunya_data
+
+cd ambient
+git add .
+git commit -m "-"
+git push origin main
+cd ..
+cd videos
+git add .
+git commit -m "-"
+git push origin main
+cd ..
+cd audios
+git add .
+git commit -m "-"
+git push origin main
+cd ..
+cd ..
+cd shunya
+python generate_json.py
+git add .
+git commit -m "-"
+git push origin main
+
