@@ -12,42 +12,48 @@
   "txts": [
     {
       "id": "echo_txt_1",
+      "title": "Khoobsurat Prashn",
+      "file": "txt/Khoobsurat prashn.txt",
+      "thumbnail": "txt/thumbnails/Khoobsurat prashn.jpg"
+    },
+    {
+      "id": "echo_txt_2",
       "title": "Article On Love",
       "file": "txt/article on love.txt",
       "thumbnail": "txt/thumbnails/article on love.jpg"
     },
     {
-      "id": "echo_txt_2",
+      "id": "echo_txt_3",
       "title": "Drop Pretending To Be Ocean",
       "file": "txt/drop pretending to be ocean.txt",
       "thumbnail": "txt/thumbnails/drop pretending to be ocean.jpg"
     },
     {
-      "id": "echo_txt_3",
+      "id": "echo_txt_4",
       "title": "Ehsaas",
       "file": "txt/ehsaas.txt",
       "thumbnail": "txt/thumbnails/ehsaas.jpg"
     },
     {
-      "id": "echo_txt_4",
+      "id": "echo_txt_5",
       "title": "Mitna",
       "file": "txt/mitna.txt",
       "thumbnail": "txt/thumbnails/mitna.jpg"
     },
     {
-      "id": "echo_txt_5",
+      "id": "echo_txt_6",
       "title": "Poetry",
       "file": "txt/poetry.txt",
       "thumbnail": "txt/thumbnails/poetry.jpg"
     },
     {
-      "id": "echo_txt_6",
+      "id": "echo_txt_7",
       "title": "Priy Dost",
       "file": "txt/priy dost.txt",
       "thumbnail": "txt/thumbnails/priy dost.jpg"
     },
     {
-      "id": "echo_txt_7",
+      "id": "echo_txt_8",
       "title": "Universities",
       "file": "txt/universities.txt",
       "thumbnail": "txt/thumbnails/universities.jpg"

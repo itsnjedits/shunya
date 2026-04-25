@@ -52,11 +52,15 @@
 /* Devanagari characters should NOT have letter-spacing — it breaks glyph connections */
 .font-hindi, [class*="logo-sub"], .about-glyph,
 .home-shunya-glyph, .section-subtitle-hindi,
-.logo-sub, #mobile-topbar-glyph {
+.logo-sub, #mobile-topbar-glyph,
+.nav-label.font-hindi {
+  font-family: var(--font-hindi) !important;
   letter-spacing: 0 !important;
   font-kerning: normal;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  font-size: .9rem;
+  line-height: 1.5;
 }
 
 /* Gradient Hindi words — Pravaah, Anubhuti and similar */
@@ -123,18 +127,17 @@ button { cursor:pointer; border:none; background:none; font-family:inherit; colo
   border-bottom:1px solid var(--border-soft);
   z-index:200;
   align-items:center;
-  padding:0 14px;
-  gap:12px;
+  justify-content:space-between;
+  padding:0 16px;
 }
 #mobile-topbar-name {
   font-family:var(--font-serif); font-size:1.1rem; font-weight:300;
-  color:var(--text-primary); letter-spacing:.08em; flex:1; text-align:center;
+  color:var(--text-primary); letter-spacing:.08em;
+  flex:1; text-align:center;
+  cursor:pointer;
+  transition:opacity .25s;
 }
-#mobile-topbar-logo {
-  width:28px; height:28px; object-fit:contain; border-radius:6px;
-  flex-shrink:0; pointer-events:auto; opacity:.9;
-  filter: drop-shadow(0 0 6px rgba(192,132,252,.4));
-}
+#mobile-topbar-name:hover, #mobile-topbar-name:focus { opacity:.75; outline:none; }
 
 /* ─── SIDEBAR ────────────────────────────────────────── */
 #sidebar {
@@ -237,15 +240,17 @@ button { cursor:pointer; border:none; background:none; font-family:inherit; colo
   font-family: var(--font-ui);
   letter-spacing: .06em;
 }
-/* If the label is Hindi (Devanagari), override letter-spacing */
-.nav-label:lang(hi),
+/* All nav items now use Hindi labels — apply Devanagari font to all */
+.nav-link[data-section="home"]    .nav-label,
+.nav-link[data-section="audios"]  .nav-label,
 .nav-link[data-section="ambient"] .nav-label,
 .nav-link[data-section="videos"]  .nav-label,
 .nav-link[data-section="echo"]    .nav-label,
+.nav-link[data-section="images"]  .nav-label,
 .nav-link[data-section="books"]   .nav-label {
   font-family: var(--font-hindi);
   letter-spacing: 0;
-  font-size: .88rem;
+  font-size: .9rem;
   line-height: 1.5;
 }
 .nav-hint  { font-size:.58rem; color:var(--text-dim); display:none; }
@@ -262,10 +267,12 @@ button { cursor:pointer; border:none; background:none; font-family:inherit; colo
 .ambient-mini-stop:hover { opacity:1; }
 
 #btn-random {
-  width:100%; padding:9px; border-radius:var(--radius-sm); border:1px solid var(--border);
-  color:var(--text-muted); font-size:.7rem; letter-spacing:.1em; font-family:var(--font-ui);
+  width:100%; padding:10px; border-radius:var(--radius-sm); border:1px solid var(--border);
+  color:var(--text-muted); font-size:.82rem; letter-spacing:0;
+  font-family:var(--font-hindi);
   transition:all .3s var(--ease-silk); display:flex; align-items:center; justify-content:center; gap:7px;
 }
+#btn-random span { font-family: var(--font-ui); }
 #btn-random:hover { color:var(--orchid); border-color:var(--orchid); background:rgba(192,132,252,.05); }
 
 /* ─── MAIN ───────────────────────────────────────────── */
@@ -305,7 +312,7 @@ button { cursor:pointer; border:none; background:none; font-family:inherit; colo
 .section.faded-in { opacity:1; }
 
 .section-header { margin-bottom:44px; }
-.section-eyebrow { font-size:.63rem; letter-spacing:.28em; color:var(--text-muted); text-transform:uppercase; margin-bottom:8px; font-weight:400; }
+.section-eyebrow { font-size:.72rem; letter-spacing:.30em; color:var(--text-secondary); text-transform:uppercase; margin-bottom:8px; font-weight:400; }
 /* Hindi portions of eyebrows get gradient treatment */
 .section-eyebrow .hindi-word {
   font-family: var(--font-hindi);
@@ -994,8 +1001,12 @@ button { cursor:pointer; border:none; background:none; font-family:inherit; colo
 #toast.show { transform:translateY(0); opacity:1; }
 
 /* ─── MOBILE HAMBURGER ───────────────────────────────── */
-#mobile-menu-toggle { display:none; background:none; border:none; cursor:pointer; flex-direction:column; gap:5px; align-items:center; justify-content:center; padding:6px; }
-#mobile-menu-toggle span { display:block; width:20px; height:2px; background:var(--orchid); border-radius:2px; transition:all .3s; }
+#mobile-menu-toggle {
+  display:none; background:none; border:none; cursor:pointer;
+  flex-direction:column; gap:5px; align-items:center; justify-content:center;
+  padding:6px; flex-shrink:0;
+}
+#mobile-menu-toggle span { display:block; width:22px; height:2px; background:var(--orchid); border-radius:2px; transition:all .3s; }
 
 /* ─── ANIMATIONS ─────────────────────────────────────── */
 @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
@@ -1014,7 +1025,7 @@ button { cursor:pointer; border:none; background:none; font-family:inherit; colo
     --player-h:  118px;  /* same 3-row layout on mobile */
   }
 
-  #sidebar { transform:translateX(-220px); width:220px; }
+  #sidebar { transform:translateX(-220px); width:220px; padding-top:8px; }
   #sidebar.open { transform:translateX(0); }
   #main { margin-left:0; padding-top:var(--topbar-h); }
   #mobile-topbar { display:flex; }

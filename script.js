@@ -16,13 +16,13 @@
 
 /* ─── FALLBACK NAV ─────────────────────────────────────── */
 const FALLBACK_NAV = [
-  { id:'home',    label:'Pravaah',      icon:'◌',  hint:'The flow' },
-  { id:'audios',  label:'Shravan',      icon:'◑',  hint:'What is heard' },
-  { id:'ambient', label:'अनुभूति',      icon:'〰', hint:'Surrounding sound' },
+  { id:'home',    label:'प्रवाह',       icon:'◌',  hint:'The flow' },
+  { id:'audios',  label:'श्रवण',        icon:'◑',  hint:'What is heard' },
+  { id:'ambient', label:'नाद',          icon:'〰', hint:'Surrounding sound' },
   { id:'videos',  label:'दृश्य',        icon:'▷',  hint:'Moving light' },
-  { id:'echo',    label:'प्रतिध्वनि',   icon:'∿',  hint:'Words that remain' },
-  { id:'images',  label:'Drishya',      icon:'◎',  hint:'What is seen' },
-  { id:'books',   label:'पुस्तक',       icon:'⊟',  hint:'Deeper waters' },
+  { id:'echo',    label:'प्रतिध्वनि',  icon:'∿',  hint:'Words that remain' },
+  { id:'images',  label:'दृष्टि',       icon:'◎',  hint:'What is seen' },
+  { id:'books',   label:'ग्रंथ',        icon:'⊟',  hint:'Deeper waters' },
 ];
 
 /* ─── STATE ────────────────────────────────────────────── */
@@ -298,7 +298,7 @@ function initNav() {
     <li class="nav-item">
       <a href="#" class="nav-link" data-section="${n.id}" aria-label="${n.label}">
         <span class="nav-icon">${n.icon}</span>
-        <span class="nav-label">${n.label}</span>
+        <span class="nav-label font-hindi">${n.label}</span>
         <span class="nav-hint">${n.hint}</span>
       </a>
     </li>`).join('');
@@ -1569,9 +1569,21 @@ function randomWisdom() {
 
 /* ─── ABOUT MODAL ──────────────────────────────────────── */
 function initAboutModal() {
+  // Sidebar logo → about
   document.querySelector('.sidebar-logo')?.addEventListener('click', () =>
     DOM.aboutModal?.classList.add('open')
   );
+  // Mobile topbar name → about (works on both tap and keyboard)
+  const mtn = document.getElementById('mobile-topbar-name');
+  if (mtn) {
+    mtn.addEventListener('click', () => DOM.aboutModal?.classList.add('open'));
+    mtn.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        DOM.aboutModal?.classList.add('open');
+      }
+    });
+  }
   document.getElementById('about-close')?.addEventListener('click', () =>
     DOM.aboutModal?.classList.remove('open')
   );
