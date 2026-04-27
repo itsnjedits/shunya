@@ -4,168 +4,162 @@
   "items": [
     {
       "id": "audio_1",
-      "title": "06 Islam Naya Hai, Phir Bhi Purane Jaisa Kyon",
-      "file": "06. Islam Naya Hai, Phir Bhi Purane Jaisa Kyon.mp3",
-      "thumbnail": "thumbnails/06. Islam Naya Hai, Phir Bhi Purane Jaisa Kyon.jpg"
-    },
-    {
-      "id": "audio_2",
       "title": "07 Mohammad Anpadh Par Bahut Buddhiman",
       "file": "07. Mohammad Anpadh Par Bahut Buddhiman.mp3",
       "thumbnail": "thumbnails/07. Mohammad Anpadh Par Bahut Buddhiman.jpg"
     },
     {
-      "id": "audio_3",
+      "id": "audio_2",
       "title": "08 Paigambar Rat Ko Sab Bant Dete Thhe",
       "file": "08. Paigambar Rat Ko Sab Bant Dete Thhe.mp3",
       "thumbnail": "thumbnails/08. Paigambar Rat Ko Sab Bant Dete Thhe.jpg"
     },
     {
-      "id": "audio_4",
+      "id": "audio_3",
       "title": "09 Galti Ki Is Ladke Ko Masjid Le Gaya",
       "file": "09. Galti Ki Is Ladke Ko Masjid Le Gaya.mp3",
       "thumbnail": "thumbnails/09. Galti Ki Is Ladke Ko Masjid Le Gaya.jpg"
     },
     {
-      "id": "audio_5",
+      "id": "audio_4",
       "title": "10 Sufi Fakir Roj Prabhu Ko Dhanyavad",
       "file": "10. Sufi Fakir  Roj  Prabhu Ko Dhanyavad.mp3",
       "thumbnail": "thumbnails/10. Sufi Fakir  Roj  Prabhu Ko Dhanyavad.jpg"
     },
     {
-      "id": "audio_6",
+      "id": "audio_5",
       "title": "11 Alhillaj Mansur Musalman Aur Vedanti Bhi",
       "file": "11. Alhillaj Mansur Musalman Aur Vedanti Bhi.mp3",
       "thumbnail": "thumbnails/11. Alhillaj Mansur Musalman Aur Vedanti Bhi.jpg"
     },
     {
-      "id": "audio_7",
+      "id": "audio_6",
       "title": "12 Masjid Hi Murty Ho Gayi",
       "file": "12. Masjid Hi  Murty Ho Gayi.mp3",
       "thumbnail": "thumbnails/12. Masjid Hi  Murty Ho Gayi.jpg"
     },
     {
-      "id": "audio_8",
+      "id": "audio_7",
       "title": "13 Murti Todna Ya Pujna Dono Murtivadi",
       "file": "13. Murti Todna Ya Pujna- Dono Murtivadi.mp3",
       "thumbnail": "thumbnails/13. Murti Todna Ya Pujna- Dono Murtivadi.jpg"
     },
     {
-      "id": "audio_9",
+      "id": "audio_8",
       "title": "14 Mohammad, Abu Bakar Aur Tisra",
       "file": "14. Mohammad, Abu Bakar Aur Tisra.mp3",
       "thumbnail": "thumbnails/14. Mohammad, Abu Bakar Aur Tisra.jpg"
     },
     {
-      "id": "audio_10",
+      "id": "audio_9",
       "title": "15 Mohammad Pagambar Ek Bade Rishi",
       "file": "15. Mohammad Pagambar Ek Bade Rishi.mp3",
       "thumbnail": "thumbnails/15. Mohammad Pagambar Ek Bade Rishi.jpg"
     },
     {
-      "id": "audio_11",
+      "id": "audio_10",
       "title": "16 Sufi Rabiya Aur Teen Sant",
       "file": "16. Sufi Rabiya Aur Teen Sant.mp3",
       "thumbnail": "thumbnails/16. Sufi Rabiya Aur Teen Sant.jpg"
     },
     {
-      "id": "audio_12",
+      "id": "audio_11",
       "title": "17 Mohammad Ham Teen Hai Do Nahin",
       "file": "17. Mohammad  Ham Teen Hai Do Nahin.mp3",
       "thumbnail": "thumbnails/17. Mohammad  Ham Teen Hai Do Nahin.jpg"
     },
     {
-      "id": "audio_13",
+      "id": "audio_12",
       "title": "18 Musalman Mitra Ka Prashna",
       "file": "18. Musalman Mitra Ka Prashna.mp3",
       "thumbnail": "thumbnails/18. Musalman Mitra Ka Prashna.jpg"
     },
     {
-      "id": "audio_14",
+      "id": "audio_13",
       "title": "19 Srinagar Mohammad Ka Ek Baal",
       "file": "19. Srinagar - Mohammad Ka Ek Baal.mp3",
       "thumbnail": "thumbnails/19. Srinagar - Mohammad Ka Ek Baal.jpg"
     },
     {
-      "id": "audio_15",
+      "id": "audio_14",
       "title": "20 Majhab Ab Islam Hua",
       "file": "20. Majhab Ab Islam hua.mp3",
       "thumbnail": "thumbnails/20. Majhab Ab Islam hua.jpg"
     },
     {
-      "id": "audio_16",
+      "id": "audio_15",
       "title": "21 Musalman Mitra Sannyas Aur Dar",
       "file": "21. Musalman - Mitra Sannyas Aur  Dar.mp3",
       "thumbnail": "thumbnails/21. Musalman - Mitra Sannyas Aur  Dar.jpg"
     },
     {
-      "id": "audio_17",
+      "id": "audio_16",
       "title": "Bin Bati Bin Tel 07",
       "file": "Bin Bati Bin Tel 07.mp3",
       "thumbnail": "thumbnails/Bin Bati Bin Tel 07.jpg"
     },
     {
-      "id": "audio_18",
+      "id": "audio_17",
       "title": "Bin Bati Bin Tel 08",
       "file": "Bin Bati Bin Tel 08.mp3",
       "thumbnail": "thumbnails/Bin Bati Bin Tel 08.jpg"
     },
     {
-      "id": "audio_19",
+      "id": "audio_18",
       "title": "Bin Bati Bin Tel 09",
       "file": "Bin Bati Bin Tel 09.mp3",
       "thumbnail": "thumbnails/Bin Bati Bin Tel 09.jpg"
     },
     {
-      "id": "audio_20",
+      "id": "audio_19",
       "title": "Bin Bati Bin Tel 10",
       "file": "Bin Bati Bin Tel 10.mp3",
       "thumbnail": "thumbnails/Bin Bati Bin Tel 10.jpg"
     },
     {
-      "id": "audio_21",
+      "id": "audio_20",
       "title": "Mahaveer Vani 27",
       "file": "Mahaveer Vani 27.mp3",
       "thumbnail": "thumbnails/Mahaveer Vani 27.jpg"
     },
     {
-      "id": "audio_22",
+      "id": "audio_21",
       "title": "Mahaveer Vani 28",
       "file": "Mahaveer Vani 28.mp3",
       "thumbnail": "thumbnails/Mahaveer Vani 28.jpg"
     },
     {
-      "id": "audio_23",
+      "id": "audio_22",
       "title": "Mahaveer Vani 29",
       "file": "Mahaveer Vani 29.mp3",
       "thumbnail": "thumbnails/Mahaveer Vani 29.jpg"
     },
     {
-      "id": "audio_24",
+      "id": "audio_23",
       "title": "Mahaveer Vani 30",
       "file": "Mahaveer Vani 30.mp3",
       "thumbnail": "thumbnails/Mahaveer Vani 30.jpg"
     },
     {
-      "id": "audio_25",
+      "id": "audio_24",
       "title": "Tao Upanishad 57",
       "file": "Tao Upanishad 57.mp3",
       "thumbnail": "thumbnails/Tao Upanishad 57.jpg"
     },
     {
-      "id": "audio_26",
+      "id": "audio_25",
       "title": "Tao Upanishad 58",
       "file": "Tao Upanishad 58.mp3",
       "thumbnail": "thumbnails/Tao Upanishad 58.jpg"
     },
     {
-      "id": "audio_27",
+      "id": "audio_26",
       "title": "Tao Upanishad 59",
       "file": "Tao Upanishad 59.mp3",
       "thumbnail": "thumbnails/Tao Upanishad 59.jpg"
     },
     {
-      "id": "audio_28",
+      "id": "audio_27",
       "title": "Tao Upanishad 60",
       "file": "Tao Upanishad 60.mp3",
       "thumbnail": "thumbnails/Tao Upanishad 60.jpg"

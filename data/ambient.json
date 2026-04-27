@@ -4,33 +4,39 @@
   "items": [
     {
       "id": "amb_1",
-      "title": "Antent Hope To See You Again Antent",
-      "file": "Antent - hope to see you again - Antent.mp3",
-      "thumbnail": "thumbnails/Antent - hope to see you again - Antent.jpg"
+      "title": "Antent Hope To See You Again",
+      "file": "Antent - hope to see you again.mp3",
+      "thumbnail": "thumbnails/Antent - hope to see you again.jpg"
     },
     {
       "id": "amb_2",
-      "title": "Gibran Alcocer'S Best Ambient Playlist Vol 1 Gibran Alcocer",
-      "file": "Gibran Alcocer's Best Ambient Playlist Vol.1 - Gibran Alcocer.mp3",
-      "thumbnail": "thumbnails/Gibran Alcocer's Best Ambient Playlist Vol.1 - Gibran Alcocer.jpg"
+      "title": "Gibran Alcocer'S Best Ambient Playlist",
+      "file": "Gibran Alcocer's Best Ambient Playlist.mp3",
+      "thumbnail": "thumbnails/Gibran Alcocer's Best Ambient Playlist.jpg"
     },
     {
       "id": "amb_3",
-      "title": "Peaceful Solitude Peaceful Solitude",
-      "file": "Peaceful Solitude - Peaceful Solitude.mp3",
-      "thumbnail": "thumbnails/Peaceful Solitude - Peaceful Solitude.jpg"
+      "title": "Peaceful Solitude",
+      "file": "Peaceful Solitude.mp3",
+      "thumbnail": "thumbnails/Peaceful Solitude.jpg"
     },
     {
       "id": "amb_4",
-      "title": "Seeds Of Growth Malte Marten",
-      "file": "Seeds of Growth - Malte Marten.mp3",
-      "thumbnail": "thumbnails/Seeds of Growth - Malte Marten.jpg"
+      "title": "Seeds Of Growth",
+      "file": "Seeds of Growth.mp3",
+      "thumbnail": "thumbnails/Seeds of Growth.jpg"
     },
     {
       "id": "amb_5",
-      "title": "Tibet Healing Ethereal Ambient Meditation Relaxing Sleep Ambient Music",
-      "file": "tibet - healing ethereal ambient meditation - relaxing sleep ambient music.mp3",
-      "thumbnail": "thumbnails/tibet - healing ethereal ambient meditation - relaxing sleep ambient music.jpg"
+      "title": "That Feeling At 3Am",
+      "file": "that feeling at 3am.mp3",
+      "thumbnail": "thumbnails/that feeling at 3am.jpg"
+    },
+    {
+      "id": "amb_6",
+      "title": "Tibet Healing Ethereal Ambient Meditation",
+      "file": "tibet - healing ethereal ambient meditation.mp3",
+      "thumbnail": "thumbnails/tibet - healing ethereal ambient meditation.jpg"
     }
   ]
 }

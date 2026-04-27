@@ -14,6 +14,31 @@
 
 'use strict';
 
+/* ─── UTILITIES ─────────────────────────────────────────── */
+
+/**
+ * Fisher-Yates shuffle — returns a NEW shuffled array (original untouched).
+ * Used to randomize section renders for: ambient, videos, echo, images, books.
+ * NOT used for: audios (shravan) or ThoughtCanvas notes.
+ */
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/**
+ * Debounce — delays fn execution until after `ms` ms of inactivity.
+ * Used for ThoughtCanvas auto-save to avoid excessive localStorage writes.
+ */
+function debounce(fn, ms) {
+  let timer;
+  return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
+}
+
 /* ─── FALLBACK NAV ─────────────────────────────────────── */
 const FALLBACK_NAV = [
   { id:'home',    label:'प्रवाह',       icon:'◌',  hint:'The flow' },
@@ -22,7 +47,8 @@ const FALLBACK_NAV = [
   { id:'videos',  label:'दृश्य',        icon:'▷',  hint:'Moving light' },
   { id:'echo',    label:'प्रतिध्वनि',  icon:'∿',  hint:'Words that remain' },
   { id:'images',  label:'दृष्टि',       icon:'◎',  hint:'What is seen' },
-  { id:'books',   label:'ग्रंथ',        icon:'⊟',  hint:'Deeper waters' },
+  { id:'books',         label:'ग्रंथ',        icon:'⊟',  hint:'Deeper waters' },
+  { id:'thoughtcanvas', label:'विचारकोश',    icon:'✎',  hint:'ThoughtCanvas' },
 ];
 
 /* ─── STATE ────────────────────────────────────────────── */
@@ -291,7 +317,13 @@ async function loadAllData() {
 
 /* ─── NAVIGATION ───────────────────────────────────────── */
 function initNav() {
-  const items = State.data.global?.nav || FALLBACK_NAV;
+  // Load nav from global.json if available, else fall back to FALLBACK_NAV.
+  // Then ALWAYS inject ThoughtCanvas at the end if it's not already present
+  // (global.json won't have it since it's a new feature added to the build).
+  let items = State.data.global?.nav || FALLBACK_NAV;
+  if (!items.find(n => n.id === 'thoughtcanvas')) {
+    items = [...items, { id:'thoughtcanvas', label:'विचारकोश', icon:'✎', hint:'ThoughtCanvas' }];
+  }
   const list  = document.getElementById('nav-list');
   list.innerHTML = items.map(n => `
     <li class="nav-item">
@@ -310,6 +342,10 @@ function initNav() {
   );
 }
 
+/* Sections that re-render on every visit (randomized order + live data).
+   audios (shravan) and thoughtcanvas are intentionally NOT in this set. */
+const ALWAYS_RERENDER = new Set(['home', 'ambient', 'videos', 'echo', 'images', 'books']);
+
 function navigateTo(id) {
   if (State.currentSection === id) return;
   document.querySelectorAll('.section').forEach(s => s.classList.remove('visible','faded-in'));
@@ -320,7 +356,8 @@ function navigateTo(id) {
   if (!el) return;
   el.classList.add('visible');
   requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('faded-in')));
-  if (!State.rendered.has(id) || id==='home') {
+  // Re-render randomized sections every open; cache non-randomized ones
+  if (!State.rendered.has(id) || ALWAYS_RERENDER.has(id)) {
     renderSection(id);
     State.rendered.add(id);
   }
@@ -331,6 +368,7 @@ function renderSection(id) {
   ({
     home:renderHome, audios:renderAudios, ambient:renderAmbient,
     videos:renderVideos, echo:renderEcho, images:renderImages, books:renderBooks,
+    thoughtcanvas: renderThoughtCanvas,
   })[id]?.();
 }
 
@@ -697,7 +735,9 @@ function initPlayerBar() {
 
   document.addEventListener('keydown', e => {
     const tag = document.activeElement?.tagName;
+    // Skip shortcuts when typing in input, textarea, or contenteditable elements (e.g. TC note titles)
     if (['INPUT','TEXTAREA'].includes(tag)) return;
+    if (document.activeElement?.isContentEditable) return;
     if (e.code==='Space')   { e.preventDefault(); if(DOM.mainAudio.src) toggleAudioPlayback(); }
     if (e.key==='ArrowRight'&&DOM.mainAudio.src) { e.preventDefault(); DOM.mainAudio.currentTime = Math.min(DOM.mainAudio.duration||0, DOM.mainAudio.currentTime+10); }
     if (e.key==='ArrowLeft' &&DOM.mainAudio.src) { e.preventDefault(); DOM.mainAudio.currentTime = Math.max(0, DOM.mainAudio.currentTime-10); }
@@ -746,13 +786,15 @@ function initSpeedPanel() {
 /* ─── VIDEOS ④ nav ─────────────────────────────────────── */
 function renderVideos() {
   const C = document.getElementById('videos-grid');
-  const videos = State.data.videos;
-  if (!videos.length) { C.innerHTML = emptyState('▷','No videos. Add files to <code>shunya_data/videos/</code> and run <code>generate_json.py</code>'); return; }
+  if (!State.data.videos.length) { C.innerHTML = emptyState('▷','No videos. Add files to <code>shunya_data/videos/</code> and run <code>generate_json.py</code>'); return; }
+  // Shuffle display order every time this section is opened (randomization feature)
+  const videos = shuffle(State.data.videos);
   C.innerHTML = `<div class="content-grid">${
     videos.map((v,i) => buildCard(v,{badge:'Video',delay:i*.06,showPlay:true})).join('')
   }</div>`;
   lazyLoad(C);
   C.querySelectorAll('.content-card').forEach(card => {
+    // Find in original data array so video modal prev/next nav is consistent
     card.addEventListener('click', () => {
       const idx = State.data.videos.findIndex(v=>v.id===card.dataset.id);
       if (idx >= 0) openVideoModal(idx);
@@ -820,8 +862,9 @@ function initVideoModal() {
 /* ─── ECHO ─────────────────────────────────────────────── */
 function renderEcho() {
   const C = document.getElementById('echo-grid');
-  const all = State.data.echo.all;
-  if (!all.length) { C.innerHTML = emptyState('∿','No writings. Add files to <code>shunya/echo/</code> and run <code>generate_json.py</code>'); return; }
+  if (!State.data.echo.all.length) { C.innerHTML = emptyState('∿','No writings. Add files to <code>shunya/echo/</code> and run <code>generate_json.py</code>'); return; }
+  // Shuffle display order every time section is opened (randomization feature)
+  const all = shuffle(State.data.echo.all);
   C.innerHTML = all.map((item,i) => buildCard(item,{badge:item.type==='pdf'?'PDF':'TXT',delay:i*.06,extraClass:`echo-${item.type}`})).join('');
   lazyLoad(C);
   C.querySelectorAll('.content-card').forEach(card =>
@@ -1004,9 +1047,10 @@ function initPdfModal() {
 /* ─── IMAGES ③ lightbox with navigation ──────────────── */
 function renderImages() {
   const C = document.getElementById('images-grid');
-  const imgs = State.data.images;
-  if (!imgs.length) { C.innerHTML = emptyState('◎','No images. Add files to <code>shunya/images/</code> and run <code>generate_json.py</code>'); return; }
-  State.lightboxImages = imgs;
+  if (!State.data.images.length) { C.innerHTML = emptyState('◎','No images. Add files to <code>shunya/images/</code> and run <code>generate_json.py</code>'); return; }
+  // Shuffle display order every time section is opened (randomization feature)
+  const imgs = shuffle(State.data.images);
+  State.lightboxImages = imgs; // lightbox navigation follows same shuffled order
   C.innerHTML = imgs.map((img,i) => `
     <div class="image-card animate-in" data-id="${img.id}" data-idx="${i}" style="animation-delay:${i*.04}s">
       <img data-src="${img.url}" alt="" loading="lazy">
@@ -1116,12 +1160,14 @@ function initLightbox() {
 /* ─── BOOKS ─────────────────────────────────────────────── */
 function renderBooks() {
   const C = document.getElementById('books-grid');
-  const books = State.data.books;
-  if (!books.length) { C.innerHTML = emptyState('⊟','No books. Add PDFs to <code>shunya/books/pdfs/</code> and run <code>generate_json.py</code>'); return; }
+  if (!State.data.books.length) { C.innerHTML = emptyState('⊟','No books. Add PDFs to <code>shunya/books/pdfs/</code> and run <code>generate_json.py</code>'); return; }
+  // Shuffle display order every time section is opened (randomization feature)
+  const books = shuffle(State.data.books);
   C.innerHTML = `<div class="content-grid">${books.map((b,i) => buildCard(b,{badge:'PDF',delay:i*.06})).join('')}</div>`;
   lazyLoad(C);
   C.querySelectorAll('.content-card').forEach(card => {
-    const item = books.find(b=>b.id===card.dataset.id);
+    // Find in original data to open correctly
+    const item = State.data.books.find(b=>b.id===card.dataset.id);
     if (!item) return;
     const act = document.createElement('div');
     act.className = 'card-actions';
@@ -1181,7 +1227,8 @@ function renderAmbient() {
         </div>
       </div>` : ''}
     <div class="ambient-cards-grid">
-      ${items.map((a,i) => {
+      ${/* Shuffle display order for ambient section (randomization feature) */
+        shuffle(items).map((a,i) => {
         const on = State.ambient.currentId===a.id && State.ambient.isPlaying;
         return `
           <div class="ambient-card animate-in ${on?'playing':''}" data-id="${a.id}" style="animation-delay:${i*.06}s">
@@ -1634,7 +1681,11 @@ function initMobileNav() {
 
 /* ─── CONTENT PROTECTION ───────────────────────────────── */
 function initContentProtection() {
-  document.addEventListener('contextmenu', e => e.preventDefault());
+  document.addEventListener('contextmenu', e => {
+    // Allow right-click (context menu) inside ThoughtCanvas note cards for editing
+    if (e.target.closest('.tc-note-card')) return;
+    e.preventDefault();
+  });
   document.addEventListener('dragstart', e => { if(e.target.tagName==='IMG') e.preventDefault(); });
 }
 
@@ -1769,6 +1820,378 @@ function initOrbs() {
   })();
 }
 
+
+/* ═══════════════════════════════════════════════════════════
+   THOUGHTCANVAS — Notebook / Diary System   (TC namespace)
+   vichar · विचारकोश · Your private canvas of thought
+
+   Storage key: "thoughtCanvasNotes"
+   Structure:   [{ id, title, content, createdAt, updatedAt }]
+   Notes are NEVER randomized — stored and displayed in order.
+═══════════════════════════════════════════════════════════ */
+
+/* ─── TC STORAGE NAMESPACE ──────────────────────────────── */
+const TC = {
+  KEY: 'thoughtCanvasNotes',
+
+  /** Load all notes from localStorage (safe JSON parse) */
+  load() {
+    try { return JSON.parse(localStorage.getItem(this.KEY)) || []; }
+    catch(e) { console.warn('[TC] Parse error:', e); return []; }
+  },
+
+  /** Persist notes array to localStorage */
+  save(notes) {
+    try { localStorage.setItem(this.KEY, JSON.stringify(notes)); }
+    catch(e) { console.warn('[TC] Storage write failed:', e); }
+  },
+
+  /** Return all notes in stored order */
+  getAll()    { return this.load(); },
+
+  /** Return a single note by id */
+  getById(id) { return this.load().find(n => n.id === id) || null; },
+
+  /** Create and persist a new blank note, return it */
+  create() {
+    const notes = this.load();
+    const note  = {
+      id:        'note_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+      title:     'Untitled Note',
+      content:   '',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    notes.push(note);
+    this.save(notes);
+    return note;
+  },
+
+  /** Merge `changes` into the note with given id, update timestamp */
+  update(id, changes) {
+    const notes = this.load();
+    const idx   = notes.findIndex(n => n.id === id);
+    if (idx < 0) return null;
+    notes[idx]  = { ...notes[idx], ...changes, updatedAt: Date.now() };
+    this.save(notes);
+    return notes[idx];
+  },
+
+  /** Remove note with given id */
+  delete(id) {
+    const notes = this.load().filter(n => n.id !== id);
+    this.save(notes);
+  },
+};
+
+/* ─── HELPERS ────────────────────────────────────────────── */
+
+/** Human-readable relative time for note footers */
+function formatNoteTime(ts) {
+  const diff = Date.now() - ts;
+  if (diff < 60000)    return 'Just now';
+  if (diff < 3600000)  return Math.floor(diff / 60000) + 'm ago';
+  if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+  return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+/* ─── RENDER THOUGHTCANVAS ──────────────────────────────── */
+function renderThoughtCanvas() {
+  const C = document.getElementById('thoughtcanvas-inner');
+  if (!C) return;
+
+  const notes = TC.getAll(); // maintained in stored order — never shuffled
+
+  // Build toolbar + notes grid
+  C.innerHTML = `
+    <div class="tc-toolbar">
+      <button id="tc-create-btn" class="tc-create-btn" aria-label="Create new note">
+        <span class="tc-plus">+</span> Create New File
+      </button>
+      <span class="tc-count">${notes.length} note${notes.length !== 1 ? 's' : ''}</span>
+    </div>
+    <div class="tc-notes-grid" id="tc-notes-grid">
+      ${notes.length
+        ? notes.map((note, i) => buildNoteCard(note, i)).join('')
+        : `<div class="tc-empty-state">
+             <div class="tc-empty-glyph">✎</div>
+             <div class="tc-empty-text">No notes yet. Create your first file to begin.</div>
+           </div>`}
+    </div>`;
+
+  // Populate content + wire events for each card
+  notes.forEach(note => {
+    const card = C.querySelector(`.tc-note-card[data-id="${note.id}"]`);
+    if (!card) return;
+    // Set values safely via DOM properties (avoids HTML injection)
+    card.querySelector('.tc-note-title').textContent   = note.title;
+    card.querySelector('.tc-note-content').value        = note.content;
+    card.querySelector('.tc-note-time').textContent    = formatNoteTime(note.updatedAt);
+    card.querySelector('.tc-note-chars').textContent   = note.content.length + ' chars';
+    attachNoteCardEvents(note.id);
+  });
+
+  // "Create New File" button
+  document.getElementById('tc-create-btn')?.addEventListener('click', () => {
+    TC.create();
+    renderThoughtCanvas(); // re-render to include new note
+    // Scroll to + focus the newly added note
+    requestAnimationFrame(() => {
+      const lastCard  = document.querySelector('#tc-notes-grid .tc-note-card:last-child');
+      const titleEl   = lastCard?.querySelector('.tc-note-title');
+      lastCard?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      titleEl?.focus();
+      // Select all text so user can immediately rename
+      if (titleEl) {
+        const range = document.createRange();
+        const sel   = window.getSelection();
+        range.selectNodeContents(titleEl);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+    });
+  });
+}
+
+/* ─── BUILD NOTE CARD HTML ──────────────────────────────── */
+function buildNoteCard(note, i) {
+  return `
+    <div class="tc-note-card animate-in" data-id="${note.id}" style="animation-delay:${(i * 0.06).toFixed(2)}s">
+      <div class="tc-note-header">
+        <div class="tc-note-title"
+             contenteditable="true"
+             spellcheck="false"
+             role="textbox"
+             aria-label="Note title"
+             aria-multiline="false"></div>
+        <div class="tc-note-actions">
+          <button class="tc-btn tc-btn-dl"     title="Download note" aria-label="Download">↓</button>
+          <button class="tc-btn tc-btn-delete" title="Delete note"   aria-label="Delete">✕</button>
+        </div>
+      </div>
+
+      <!-- Download format picker (toggled by ↓ button) -->
+      <div class="tc-download-dropdown" aria-hidden="true">
+        <button class="tc-dl-opt" data-format="txt">↓ Plain Text (.txt)</button>
+        <button class="tc-dl-opt" data-format="pdf">↓ PDF Document</button>
+      </div>
+
+      <!-- Main writing area -->
+      <textarea class="tc-note-content"
+                placeholder="Begin writing…"
+                spellcheck="true"
+                aria-label="Note content"></textarea>
+
+      <div class="tc-note-footer">
+        <span class="tc-note-time"></span>
+        <span class="tc-note-chars"></span>
+      </div>
+    </div>`;
+}
+
+/* ─── ATTACH EVENTS TO A NOTE CARD ─────────────────────── */
+function attachNoteCardEvents(noteId) {
+  const card = document.querySelector(`.tc-note-card[data-id="${noteId}"]`);
+  if (!card) return;
+
+  const titleEl   = card.querySelector('.tc-note-title');
+  const contentEl = card.querySelector('.tc-note-content');
+  const deleteBtn = card.querySelector('.tc-btn-delete');
+  const dlBtn     = card.querySelector('.tc-btn-dl');
+  const dropdown  = card.querySelector('.tc-download-dropdown');
+  const timeEl    = card.querySelector('.tc-note-time');
+  const charsEl   = card.querySelector('.tc-note-chars');
+
+  /* ── Auto-save title — debounced 400ms ── */
+  const saveTitle = debounce((val) => {
+    TC.update(noteId, { title: val || 'Untitled Note' });
+    const updated = TC.getById(noteId);
+    if (timeEl && updated) timeEl.textContent = formatNoteTime(updated.updatedAt);
+  }, 400);
+
+  titleEl.addEventListener('input', () => {
+    saveTitle(titleEl.textContent.trim());
+  });
+  // Enter key moves focus to content area
+  titleEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); contentEl.focus(); }
+  });
+  // On blur, sanitize empty title
+  titleEl.addEventListener('blur', () => {
+    if (!titleEl.textContent.trim()) {
+      titleEl.textContent = 'Untitled Note';
+      TC.update(noteId, { title: 'Untitled Note' });
+    }
+  });
+
+  /* ── Auto-save content — debounced 500ms ── */
+  const saveContent = debounce((val) => {
+    TC.update(noteId, { content: val });
+    const updated = TC.getById(noteId);
+    if (timeEl  && updated) timeEl.textContent  = formatNoteTime(updated.updatedAt);
+    if (charsEl)             charsEl.textContent = val.length + ' chars';
+  }, 500);
+
+  contentEl.addEventListener('input', () => {
+    saveContent(contentEl.value);
+  });
+
+  /* ── Delete note ── */
+  deleteBtn.addEventListener('click', () => {
+    if (!confirm('Permanently delete this note?')) return;
+    TC.delete(noteId);
+    // Animate card out before removal
+    card.style.transition = 'opacity .3s var(--ease-silk), transform .3s var(--ease-silk)';
+    card.style.opacity    = '0';
+    card.style.transform  = 'scale(0.95) translateY(-4px)';
+    setTimeout(() => {
+      card.remove();
+      const remaining = TC.getAll().length;
+      const countEl   = document.querySelector('.tc-count');
+      if (countEl) countEl.textContent = remaining + ' note' + (remaining !== 1 ? 's' : '');
+      // Show empty state if all notes deleted
+      const grid = document.getElementById('tc-notes-grid');
+      if (grid && !remaining) {
+        grid.innerHTML = `<div class="tc-empty-state">
+          <div class="tc-empty-glyph">✎</div>
+          <div class="tc-empty-text">No notes yet. Create your first file to begin.</div>
+        </div>`;
+      }
+    }, 340);
+  });
+
+  /* ── Download dropdown toggle ── */
+  dlBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    const isOpen = dropdown.classList.contains('open');
+    // Close any other open dropdowns
+    document.querySelectorAll('.tc-download-dropdown.open').forEach(d => d.classList.remove('open'));
+    if (!isOpen) { dropdown.classList.add('open'); dropdown.setAttribute('aria-hidden', 'false'); }
+    else         { dropdown.setAttribute('aria-hidden', 'true'); }
+  });
+
+  /* ── Download format selection ── */
+  dropdown.querySelectorAll('.tc-dl-opt').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const note = TC.getById(noteId);
+      if (!note) return;
+      if (btn.dataset.format === 'txt') downloadNoteAsTxt(note);
+      if (btn.dataset.format === 'pdf') downloadNoteAsPdf(note);
+      dropdown.classList.remove('open');
+      dropdown.setAttribute('aria-hidden', 'true');
+    });
+  });
+}
+
+/* ─── DOWNLOAD AS TXT ────────────────────────────────────── */
+function downloadNoteAsTxt(note) {
+  const safeName  = (note.title || 'note').replace(/[^a-z0-9 \-_]/gi, '').trim().replace(/ +/g, '_') || 'note';
+  const separator = '─'.repeat(Math.min(note.title.length, 60));
+  const nl        = '\n';
+  const header    = note.title + nl + separator + nl + 'Created: ' + new Date(note.createdAt).toLocaleString() + nl + nl;
+  const blob      = new Blob([header + note.content], { type: 'text/plain;charset=utf-8' });
+  const url       = URL.createObjectURL(blob);
+  const a         = Object.assign(document.createElement('a'), { href: url, download: safeName + '.txt' });
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Downloaded as .txt ✓');
+}
+
+/* ─── DOWNLOAD AS PDF ────────────────────────────────────── */
+/* Uses browser print-to-PDF (no external library needed).
+   Opens a clean styled window and triggers window.print(). */
+function downloadNoteAsPdf(note) {
+  const esc = s => (s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+
+  const win = window.open('', '_blank', 'width=860,height=700');
+  if (!win) {
+    showToast('Allow popups to download PDF');
+    return;
+  }
+
+  const dateStr = new Date(note.createdAt).toLocaleDateString(undefined, {
+    year: 'numeric', month: 'long', day: 'numeric'
+  });
+
+  win.document.write(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>${esc(note.title)}</title>
+  <style>
+    @page { margin: 50px 52px; }
+    *     { box-sizing: border-box; margin: 0; padding: 0; }
+    body  {
+      font-family: Georgia, 'Times New Roman', serif;
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 48px 24px;
+      color: #1a1a1a;
+      line-height: 1.8;
+      font-size: 14.5px;
+      -webkit-font-smoothing: antialiased;
+    }
+    h1    {
+      font-size: 1.8rem;
+      font-weight: 400;
+      letter-spacing: .01em;
+      margin-bottom: 8px;
+      color: #0d0d0d;
+    }
+    .meta {
+      font-size: .75rem;
+      color: #999;
+      margin-bottom: 32px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid #e8e8e8;
+      font-family: Helvetica, Arial, sans-serif;
+    }
+    .body {
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 14.5px;
+      line-height: 1.85;
+    }
+    @media print {
+      body { padding: 0; }
+      .no-print { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <h1>${esc(note.title)}</h1>
+  <div class="meta">Created ${esc(dateStr)} &nbsp;·&nbsp; ThoughtCanvas &nbsp;·&nbsp; ShunyaSpace</div>
+  <div class="body">${esc(note.content)}</div>
+</body>
+</html>`);
+  win.document.close();
+  setTimeout(() => {
+    win.focus();
+    win.print();
+  }, 450);
+}
+
+/* ─── INIT THOUGHTCANVAS ────────────────────────────────── */
+function initThoughtCanvas() {
+  // Close all TC download dropdowns when clicking outside a note card
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.tc-note-card')) {
+      document.querySelectorAll('.tc-download-dropdown.open').forEach(d => {
+        d.classList.remove('open');
+        d.setAttribute('aria-hidden', 'true');
+      });
+    }
+  });
+}
+
 /* ─── SAFE INIT HELPER ──────────────────────────────────── */
 function safeInit(label, fn) {
   try { fn(); }
@@ -1800,6 +2223,7 @@ async function boot() {
   safeInit('stars',            initStars);
   safeInit('orbs',             initOrbs);
   safeInit('contentProtect',   initContentProtection);
+  safeInit('thoughtCanvas',    initThoughtCanvas);
 
   document.getElementById('btn-random')?.addEventListener('click', randomWisdom);
 
