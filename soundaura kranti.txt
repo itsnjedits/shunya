@@ -4,7 +4,7 @@ git add .
 git commit -m "initial commit"
 
 git branch -M main
-git remote add origin https://github.com/itsnjedits/audios.git
+git remote add origin https://github.com/itsnjedits/mma.git
 git push -u origin main
 
 
