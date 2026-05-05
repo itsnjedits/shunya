@@ -10,24 +10,54 @@
     },
     {
       "id": "book_2",
-      "title": "Tantrik Shuddhi Ka Aadhar",
-      "file": "Tantrik Shuddhi Ka Aadhar.pdf",
-      "thumbnail": "thumbnails/Tantrik Shuddhi Ka Aadhar.jpg"
+      "title": "Dhyan Sutra",
+      "file": "Dhyan Sutra.pdf",
+      "thumbnail": "thumbnails/Dhyan Sutra.jpg"
     },
     {
       "id": "book_3",
+      "title": "Jeevan Ki Khoj",
+      "file": "Jeevan Ki Khoj.pdf",
+      "thumbnail": "thumbnails/Jeevan Ki Khoj.jpg"
+    },
+    {
+      "id": "book_4",
+      "title": "Main Kaun Hun",
+      "file": "Main Kaun Hun.pdf",
+      "thumbnail": "thumbnails/Main Kaun Hun.jpg"
+    },
+    {
+      "id": "book_5",
+      "title": "Manushya Hone Ki Kala",
+      "file": "Manushya Hone Ki Kala.pdf",
+      "thumbnail": "thumbnails/Manushya Hone Ki Kala.jpg"
+    },
+    {
+      "id": "book_6",
+      "title": "Shareer Aur Tantra",
+      "file": "Shareer Aur Tantra.pdf",
+      "thumbnail": "thumbnails/Shareer Aur Tantra.jpg"
+    },
+    {
+      "id": "book_7",
+      "title": "Shunya Samadhi",
+      "file": "Shunya Samadhi.pdf",
+      "thumbnail": "thumbnails/Shunya Samadhi.jpg"
+    },
+    {
+      "id": "book_8",
       "title": "The Book Of Man",
       "file": "The Book Of Man.pdf",
       "thumbnail": "thumbnails/The Book Of Man.jpg"
     },
     {
-      "id": "book_4",
+      "id": "book_9",
       "title": "The Rebel",
       "file": "The Rebel.pdf",
       "thumbnail": "thumbnails/The Rebel.jpg"
     },
     {
-      "id": "book_5",
+      "id": "book_10",
       "title": "The Secret",
       "file": "The Secret.pdf",
       "thumbnail": "thumbnails/The Secret.jpg"
