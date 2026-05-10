@@ -4,6 +4,12 @@
   "pdfs": [
     {
       "id": "echo_pdf_1",
+      "title": "Lonely Islands",
+      "file": "pdfs/Lonely Islands.pdf",
+      "thumbnail": "pdfs/thumbnails/Lonely Islands.jpg"
+    },
+    {
+      "id": "echo_pdf_2",
       "title": "Love Is Wind",
       "file": "pdfs/Love Is Wind.pdf",
       "thumbnail": "pdfs/thumbnails/Love Is Wind.jpg"
@@ -18,42 +24,48 @@
     },
     {
       "id": "echo_txt_2",
+      "title": "The Equality Of Death",
+      "file": "txt/The Equality of Death.txt",
+      "thumbnail": "txt/thumbnails/The Equality of Death.jpg"
+    },
+    {
+      "id": "echo_txt_3",
       "title": "Article On Love",
       "file": "txt/article on love.txt",
       "thumbnail": "txt/thumbnails/article on love.jpg"
     },
     {
-      "id": "echo_txt_3",
+      "id": "echo_txt_4",
       "title": "Drop Pretending To Be Ocean",
       "file": "txt/drop pretending to be ocean.txt",
       "thumbnail": "txt/thumbnails/drop pretending to be ocean.jpg"
     },
     {
-      "id": "echo_txt_4",
+      "id": "echo_txt_5",
       "title": "Ehsaas",
       "file": "txt/ehsaas.txt",
       "thumbnail": "txt/thumbnails/ehsaas.jpg"
     },
     {
-      "id": "echo_txt_5",
+      "id": "echo_txt_6",
       "title": "Mitna",
       "file": "txt/mitna.txt",
       "thumbnail": "txt/thumbnails/mitna.jpg"
     },
     {
-      "id": "echo_txt_6",
+      "id": "echo_txt_7",
       "title": "Poetry",
       "file": "txt/poetry.txt",
       "thumbnail": "txt/thumbnails/poetry.jpg"
     },
     {
-      "id": "echo_txt_7",
+      "id": "echo_txt_8",
       "title": "Priy Dost",
       "file": "txt/priy dost.txt",
       "thumbnail": "txt/thumbnails/priy dost.jpg"
     },
     {
-      "id": "echo_txt_8",
+      "id": "echo_txt_9",
       "title": "Universities",
       "file": "txt/universities.txt",
       "thumbnail": "txt/thumbnails/universities.jpg"
